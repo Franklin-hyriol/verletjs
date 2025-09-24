@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Test: verlet-engine Build</title>
+<meta charset="UTF-8" />
+<style>
+  body { font-family: sans-serif; background: #222; color: #eee; text-align: center; }
+  canvas { background: #fff; }
+</style>
+</head>
+<body>
+<h1>Test: verlet-engine Build</h1>
+<canvas id="scratch" style="width: 800px; height: 500px;"></canvas>
+
+<script type="module">
+  // On importe les classes nécessaires depuis notre module ES6
+  // C'est la manière moderne, qui remplace l'ancienne balise <script src="...">
+  import { VerletJS, Vec2 } from './dist/verlet-engine.es.js';
+
+  // Le reste du code est identique à votre exemple !
+  window.onload = function() {
+    const canvas = document.getElementById("scratch");
+    const width = parseInt(canvas.style.width);
+    const height = parseInt(canvas.style.height);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.getContext("2d").scale(dpr, dpr);
+
+    const sim = new VerletJS(width, height, canvas);
+    sim.friction = 1;
+
+    const segment = sim.lineSegments([new Vec2(20,10), new Vec2(40,10), new Vec2(60,10), new Vec2(80,10), new Vec2(100,10)], 0.02);
+    segment.pin(0);
+    segment.pin(2);
+    segment.pin(4);
+
+    const tire1 = sim.tire(new Vec2(200,50), 50, 30, 0.3, 0.9);
+    const tire2 = sim.tire(new Vec2(400,50), 70, 7, 0.1, 0.2);
+    const tire3 = sim.tire(new Vec2(600,50), 70, 3, 1, 1);
+
+    const loop = function() {
+      sim.frame(16);
+      sim.draw();
+      requestAnimationFrame(loop);
+    };
+
+    loop();
+  };
+</script>
+</body>
+</html>
