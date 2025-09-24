@@ -1,0 +1,17 @@
+{
+  "name": "verlet-react",
+  "private": true,
+  "version": "1.0.0",
+  "description": "add it later",
+  "workspaces": [
+    "packages/*",
+    "app/*"
+  ],
+  "license": "MIT",
+  "author": "Franklin Hyriol",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
