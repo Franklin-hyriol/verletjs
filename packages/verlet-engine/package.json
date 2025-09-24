@@ -1,0 +1,26 @@
+{
+  "name": "verlet-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/verlet-engine.umd.js",
+  "module": "./dist/verlet-engine.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/verlet-engine.es.js",
+      "require": "./dist/verlet-engine.umd.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "vite": "^7.1.7",
+    "vite-plugin-dts": "^4.5.4"
+  }
+}
