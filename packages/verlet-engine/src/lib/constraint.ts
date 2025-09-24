@@ -25,16 +25,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import type { Particle } from './verlet';
 import { Vec2 } from './vec2';
 
-// DistanceConstraint -- constrains to initial distance
-// PinConstraint -- constrains to static/fixed point
-// AngleConstraint -- constrains 3 particles to an angle
-
+/**
+ * Constrains two particles to a specific distance from each other.
+ */
 export class DistanceConstraint {
+	/** The first particle. */
 	a: Particle;
+	/** The second particle. */
 	b: Particle;
+	/** The required distance between the two particles. */
 	distance: number;
+	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
 	stiffness: number;
 
+	/**
+	 * @param a The first particle.
+	 * @param b The second particle.
+	 * @param stiffness A value from 0.0 to 1.0, where 1.0 is the most stiff.
+	 * @param [distance] Optional. The distance to maintain. If not provided, the initial distance between the particles is used.
+	 */
 	constructor(a: Particle, b: Particle, stiffness: number, distance?: number) {
 		this.a = a;
 		this.b = b;
@@ -42,6 +51,10 @@ export class DistanceConstraint {
 		this.stiffness = stiffness;
 	}
 
+	/**
+	 * Relaxes the constraint, attempting to satisfy it by moving the particles.
+	 * @param stepCoef A coefficient for the relaxation step.
+	 */
 	relax(stepCoef: number) {
 		const normal = this.a.pos.sub(this.b.pos);
 		const m = normal.length2();
@@ -50,6 +63,10 @@ export class DistanceConstraint {
 		this.b.pos.mutableSub(normal);
 	}
 
+	/**
+	 * Draws the constraint on a 2D canvas context.
+	 * @param ctx The canvas context to draw on.
+	 */
 	draw(ctx: CanvasRenderingContext2D) {
 		ctx.beginPath();
 		ctx.moveTo(this.a.pos.x, this.a.pos.y);
@@ -59,19 +76,36 @@ export class DistanceConstraint {
 	}
 }
 
+/**
+ * Constrains a particle to a fixed point in space.
+ */
 export class PinConstraint {
+	/** The particle to be pinned. */
 	a: Particle;
+	/** The fixed point in space where the particle is pinned. */
 	pos: Vec2;
 
+	/**
+	 * @param a The particle to be pinned.
+	 * @param pos The position to pin the particle to.
+	 */
 	constructor(a: Particle, pos: Vec2) {
 		this.a = a;
 		this.pos = new Vec2().mutableSet(pos);
 	}
 
+	/**
+	 * Relaxes the constraint by forcing the particle to the pinned position.
+	 * @param stepCoef A coefficient for the relaxation step (unused for PinConstraint).
+	 */
 	relax(stepCoef: number) {
 		this.a.pos.mutableSet(this.pos);
 	}
 
+	/**
+	 * Draws the constraint on a 2D canvas context.
+	 * @param ctx The canvas context to draw on.
+	 */
 	draw(ctx: CanvasRenderingContext2D) {
 		ctx.beginPath();
 		ctx.arc(this.pos.x, this.pos.y, 6, 0, 2 * Math.PI);
@@ -80,13 +114,27 @@ export class PinConstraint {
 	}
 }
 
+/**
+ * Constrains the angle between three particles.
+ */
 export class AngleConstraint {
+	/** The first particle of the angle. */
 	a: Particle;
+	/** The center particle (the vertex of the angle). */
 	b: Particle;
+	/** The third particle of the angle. */
 	c: Particle;
+	/** The angle to be maintained (in radians). */
 	angle: number;
+	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
 	stiffness: number;
 
+	/**
+	 * @param a The first particle.
+	 * @param b The center particle (the vertex of the angle).
+	 * @param c The third particle.
+	 * @param stiffness A value from 0.0 to 1.0.
+	 */
 	constructor(a: Particle, b: Particle, c: Particle, stiffness: number) {
 		this.a = a;
 		this.b = b;
@@ -95,6 +143,10 @@ export class AngleConstraint {
 		this.stiffness = stiffness;
 	}
 
+	/**
+	 * Relaxes the constraint by rotating the particles to satisfy the angle.
+	 * @param stepCoef A coefficient for the relaxation step.
+	 */
 	relax(stepCoef: number) {
 		let angle = this.b.pos.angle2(this.a.pos, this.c.pos);
 		let diff = angle - this.angle;
@@ -112,6 +164,10 @@ export class AngleConstraint {
 		this.b.pos = this.b.pos.rotate(this.c.pos, -diff);
 	}
 
+	/**
+	 * Draws the constraint on a 2D canvas context.
+	 * @param ctx The canvas context to draw on.
+	 */
 	draw(ctx: CanvasRenderingContext2D) {
 		ctx.beginPath();
 		ctx.moveTo(this.a.pos.x, this.a.pos.y);

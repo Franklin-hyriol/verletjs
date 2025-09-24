@@ -8,4 +8,4 @@ export { DistanceConstraint, PinConstraint, AngleConstraint } from './lib/constr
 export { Vec2 } from './lib/vec2';
 
 // Monkey-patched methods for creating objects
-import './lib/objects';
+export * from './lib/objects';
