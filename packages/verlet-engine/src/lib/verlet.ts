@@ -32,68 +32,76 @@ if (typeof window !== 'undefined' && !window.requestAnimationFrame) {
     };
 }
 
+/**
+ * Represents a simple particle in the physics simulation.
+ */
 export class Particle {
+	/** Current position of the particle. @type {Vec2} */
 	pos: Vec2;
+	/** Position of the particle in the previous frame, used to calculate velocity. @type {Vec2} */
 	lastPos: Vec2;
 
 	constructor(pos: Vec2) {
 		this.pos = new Vec2().mutableSet(pos);
 		this.lastPos = new Vec2().mutableSet(pos);
 	}
-
-	draw(ctx: CanvasRenderingContext2D) {
-		ctx.beginPath();
-		ctx.arc(this.pos.x, this.pos.y, 2, 0, 2 * Math.PI);
-		ctx.fillStyle = "#2dad8f";
-		ctx.fill();
-	}
 }
 
+/**
+ * A collection of particles and constraints that form a single entity.
+ */
 export class Composite {
 	particles: Particle[] = [];
 	constraints: (DistanceConstraint | PinConstraint | AngleConstraint)[] = [];
 
-	drawParticles?: (ctx: CanvasRenderingContext2D, composite: this) => void;
-	drawConstraints?: (ctx: CanvasRenderingContext2D, composite: this) => void;
-
+	/**
+	 * Pins a particle in the composite to a specific location.
+	 * @param {number} index The index of the particle to pin.
+	 * @param {Vec2} [pos] Optional. The position to pin the particle to. If not provided, the particle's current position is used.
+	 * @returns {PinConstraint} The created PinConstraint.
+	 */
 	pin(index: number, pos?: Vec2): PinConstraint {
 		pos = pos || this.particles[index].pos;
-		// We need to import PinConstraint dynamically or pass it in to avoid circular dependencies
-		// For now, this will be handled by the main VerletJS class logic
-        // This is a placeholder and will be properly typed later.
 		const pc = new PinConstraint(this.particles[index], pos);
 		this.constraints.push(pc);
 		return pc;
 	}
 }
 
+/**
+ * The main class for the headless physics simulation.
+ * It manages the simulation state and advances the physics engine.
+ */
 export class VerletJS {
+	/** The width of the simulation world. */
 	width: number;
+	/** The height of the simulation world. */
 	height: number;
-	canvas?: HTMLCanvasElement;
-	ctx?: CanvasRenderingContext2D;
-	mouse = new Vec2(0, 0);
-	mouseDown = false;
-	draggedEntity: Particle | PinConstraint | null = null;
-	selectionRadius = 20;
-	highlightColor = "#4f545c";
 
+	/** Global gravity vector applied to all particles. */
 	gravity = new Vec2(0, 0.2);
+	/** Friction factor to apply to particle velocities. A value of 1 means no friction. */
 	friction = 0.99;
+	/** Friction factor applied when a particle is on the ground. */
 	groundFriction = 0.8;
 
+	/** A list of all composite entities in the simulation. */
 	composites: Composite[] = [];
 
-	constructor(width: number, height: number, canvas?: HTMLCanvasElement) {
+	/**
+	 * Creates a new physics simulation world.
+	 * @param {number} width The width of the simulation world.
+	 * @param {number} height The height of the simulation world.
+	 */
+	constructor(width: number, height: number) {
 		this.width = width;
 		this.height = height;
-		if (canvas) {
-			this.canvas = canvas;
-			this.ctx = canvas.getContext("2d")!;
-			this.initDraggable();
-		}
 	}
 
+	/**
+	 * A function that enforces the simulation boundaries on a particle.
+	 * @param {Particle} particle The particle to constrain.
+	 */
 	bounds = (particle: Particle) => {
 		if (particle.pos.y > this.height - 1)
 			particle.pos.y = this.height - 1;
@@ -105,41 +113,15 @@ export class VerletJS {
 			particle.pos.x = this.width - 1;
 	}
 
-	initDraggable() {
-		if (!this.canvas) return;
-		// prevent context menu
-		this.canvas.oncontextmenu = (e) => {
-			e.preventDefault();
-		};
-
-		this.canvas.onmousedown = (e) => {
-			this.mouseDown = true;
-			const nearest = this.nearestEntity();
-			if (nearest) {
-				this.draggedEntity = nearest;
-			}
-		};
-
-		this.canvas.onmouseup = (e) => {
-			this.mouseDown = false;
-			this.draggedEntity = null;
-		};
-
-		this.canvas.onmousemove = (e) => {
-			if (!this.canvas) return;
-			const rect = this.canvas.getBoundingClientRect();
-			this.mouse.x = e.clientX - rect.left;
-			this.mouse.y = e.clientY - rect.top;
-		};
-	}
-
+	/**
+	 * Advances the simulation by one time step.
+	 * @param {number} step The duration of the time step, e.g., 16.
+	 */
 	frame(step: number) {
 		for (const c of this.composites) {
 			for (const p of c.particles) {
-				// calculate velocity
 				const velocity = p.pos.sub(p.lastPos).scale(this.friction);
 
-				// ground friction
 				if (p.pos.y >= this.height - 1 && velocity.length2() > 0.000001) {
 					const m = velocity.length();
 					velocity.x /= m;
@@ -147,23 +129,12 @@ export class VerletJS {
 					velocity.mutableScale(m * this.groundFriction);
 				}
 
-				// save last good state
 				p.lastPos.mutableSet(p.pos);
-
-				// gravity
 				p.pos.mutableAdd(this.gravity);
-
-				// inertia
 				p.pos.mutableAdd(velocity);
 			}
 		}
 
-		// handle dragging of entities
-		if (this.draggedEntity) {
-			this.draggedEntity.pos.mutableSet(this.mouse);
-        }
-
-		// relax
 		const stepCoef = 1 / step;
 		for (const c of this.composites) {
 			for (let i = 0; i < step; ++i) {
@@ -173,75 +144,10 @@ export class VerletJS {
             }
 		}
 
-		// bounds checking
 		for (const c of this.composites) {
 			for (const p of c.particles) {
 				this.bounds(p);
             }
 		}
-	}
-
-	draw() {
-		if (!this.ctx || !this.canvas) return;
-
-		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-		for (const c of this.composites) {
-			// draw constraints
-			if (c.drawConstraints) {
-				c.drawConstraints(this.ctx, c);
-			} else {
-				for (const constraint of c.constraints) {
-					constraint.draw(this.ctx);
-                }
-			}
-
-			// draw particles
-			if (c.drawParticles) {
-				c.drawParticles(this.ctx, c);
-			} else {
-				for (const p of c.particles) {
-					p.draw(this.ctx);
-                }
-			}
-		}
-
-		// highlight nearest / dragged entity
-		const nearest = this.draggedEntity || this.nearestEntity();
-		if (nearest) {
-			this.ctx.beginPath();
-			this.ctx.arc(nearest.pos.x, nearest.pos.y, 8, 0, 2 * Math.PI);
-			this.ctx.strokeStyle = this.highlightColor;
-			this.ctx.stroke();
-		}
-	}
-
-	nearestEntity(): Particle | PinConstraint | null {
-		let d2Nearest = 0;
-		let entity: Particle | null = null;
-		let constraintsNearest: (DistanceConstraint | PinConstraint | AngleConstraint)[] | null = null;
-
-		// find nearest point
-		for (const c of this.composites) {
-			for (const p of c.particles) {
-				const d2 = p.pos.dist2(this.mouse);
-				if (d2 <= this.selectionRadius * this.selectionRadius && (entity == null || d2 < d2Nearest)) {
-					entity = p;
-					constraintsNearest = c.constraints;
-					d2Nearest = d2;
-				}
-			}
-		}
-
-		// search for pinned constraints for this entity
-        if (constraintsNearest) {
-		    for (const constraint of constraintsNearest) {
-			    if (constraint instanceof PinConstraint && constraint.a === entity) {
-				    return constraint as PinConstraint;
-                }
-            }
-        }
-
-		return entity;
 	}
 }
