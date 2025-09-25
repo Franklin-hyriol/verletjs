@@ -9,10 +9,17 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Franklin-hyriol/verletjs.git"
+  },
   "dependencies": {
-    "verlet-react": "1.0.0",
+    "@tailwindcss/vite": "^4.1.13",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^4.1.13",
+    "verlet-react": "1.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

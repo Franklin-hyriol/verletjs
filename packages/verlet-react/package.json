@@ -1,15 +1,24 @@
 {
   "name": "verlet-react",
   "version": "1.0.0",
-  "private": true,
+  "description": "A React wrapper library for verlet-engine, providing declarative components for 2D Verlet physics simulations.",
+  "keywords": ["react", "verlet", "physics", "2d", "hook", "component", "typescript"],
+  "homepage": "https://github.com/Franklin-hyriol/verletjs#readme",
+  "bugs": {
+    "url": "https://github.com/Franklin-hyriol/verletjs/issues"
+  },
+  "author": "Franklin-hyriol",
+  "private": false,
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/......myname"
+    "url": "git+https://github.com/Franklin-hyriol/verletjs.git"
   },
+  "license": "MIT",
   "main": "./dist/verlet-react.umd.js",
   "module": "./dist/verlet-react.es.js",
   "types": "./dist/verlet-react.d.ts",
@@ -34,6 +43,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "verlet-engine": "*"
+  },
+  "peerDependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
