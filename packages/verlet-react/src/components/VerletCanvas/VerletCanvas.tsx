@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import { useVerlet } from '../hooks/useVerlet';
+import { useVerlet } from '../../hooks/useVerlet';
 import { Vec2, PinConstraint } from 'verlet-engine';
-import { VerletContext } from '../context/VerletContext';
+import { VerletContext } from '../../context/VerletContext';
 
 // Define the props for the VerletCanvas component
 interface VerletCanvasProps {
