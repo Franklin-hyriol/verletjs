@@ -1,7 +1,7 @@
 {
   "name": "verlet-engine",
   "version": "1.0.0",
-  "private": true,
+  "private": false,
   "type": "module",
   "main": "./dist/verlet-engine.umd.js",
   "module": "./dist/verlet-engine.es.js",
@@ -13,6 +13,7 @@
       "require": "./dist/verlet-engine.umd.js"
     }
   },
+  "files": ["dist", "README.md"],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
