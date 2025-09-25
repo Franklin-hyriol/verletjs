@@ -1,6 +1,13 @@
 {
   "name": "verlet-engine",
   "version": "1.0.0",
+  "description": "A 2D Verlet physics engine written in TypeScript.",
+  "keywords": ["verlet", "physics", "2d", "engine", "typescript"],
+  "homepage": "https://github.com/Franklin-hyriol/verletjs#readme",
+  "bugs": {
+    "url": "https://github.com/Franklin-hyriol/verletjs/issues"
+  },
+  "author": "Franklin-hyriol",
   "private": false,
   "type": "module",
   "main": "./dist/verlet-engine.umd.js",
@@ -14,6 +21,11 @@
     }
   },
   "files": ["dist", "README.md"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Franklin-hyriol/verletjs.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
