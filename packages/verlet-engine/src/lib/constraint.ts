@@ -24,6 +24,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import type { Particle } from './verlet';
 import { Vec2 } from './vec2';
+import type { ConstraintStyle } from './types';
+
 
 /**
  * Constrains two particles to a specific distance from each other.
@@ -37,6 +39,8 @@ export class DistanceConstraint {
 	distance: number;
 	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
 	stiffness: number;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
 
 	/**
 	 * @param a The first particle.
@@ -71,7 +75,8 @@ export class DistanceConstraint {
 		ctx.beginPath();
 		ctx.moveTo(this.a.pos.x, this.a.pos.y);
 		ctx.lineTo(this.b.pos.x, this.b.pos.y);
-		ctx.strokeStyle = "#d8dde2";
+		ctx.strokeStyle = this.style?.color || "#d8dde2";
+		ctx.lineWidth = this.style?.lineWidth || 1;
 		ctx.stroke();
 	}
 }
@@ -84,6 +89,8 @@ export class PinConstraint {
 	a: Particle;
 	/** The fixed point in space where the particle is pinned. */
 	pos: Vec2;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
 
 	/**
 	 * @param a The particle to be pinned.
@@ -108,8 +115,8 @@ export class PinConstraint {
 	 */
 	draw(ctx: CanvasRenderingContext2D) {
 		ctx.beginPath();
-		ctx.arc(this.pos.x, this.pos.y, 6, 0, 2 * Math.PI);
-		ctx.fillStyle = "rgba(0,153,255,0.1)";
+		ctx.arc(this.pos.x, this.pos.y, this.style?.radius || 6, 0, 2 * Math.PI);
+		ctx.fillStyle = this.style?.color || "rgba(0,153,255,0.1)";
 		ctx.fill();
 	}
 }
@@ -128,6 +135,8 @@ export class AngleConstraint {
 	angle: number;
 	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
 	stiffness: number;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
 
 	/**
 	 * @param a The first particle.
@@ -174,8 +183,8 @@ export class AngleConstraint {
 		ctx.lineTo(this.b.pos.x, this.b.pos.y);
 		ctx.lineTo(this.c.pos.x, this.c.pos.y);
 		const tmp = ctx.lineWidth;
-		ctx.lineWidth = 5;
-		ctx.strokeStyle = "rgba(255,255,0,0.2)";
+		ctx.lineWidth = this.style?.lineWidth || 5;
+		ctx.strokeStyle = this.style?.color || "rgba(255,255,0,0.2)";
 		ctx.stroke();
 		ctx.lineWidth = tmp;
 	}

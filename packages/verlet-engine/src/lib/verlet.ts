@@ -24,13 +24,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { Vec2 } from './vec2';
 import { DistanceConstraint, PinConstraint, AngleConstraint } from './constraint';
+import type { ParticleStyle } from './types';
 
-// Polyfill for requestAnimationFrame
-if (typeof window !== 'undefined' && !window.requestAnimationFrame) {
-    window.requestAnimationFrame = function(callback: FrameRequestCallback): number {
-        return window.setTimeout(() => callback(performance.now()), 1000 / 60);
-    };
-}
 
 /**
  * Represents a simple particle in the physics simulation.
@@ -40,6 +35,8 @@ export class Particle {
 	pos: Vec2;
 	/** Position of the particle in the previous frame, used to calculate velocity. @type {Vec2} */
 	lastPos: Vec2;
+  /** Optional style for rendering */
+  style?: ParticleStyle;
 
 	constructor(pos: Vec2) {
 		this.pos = new Vec2().mutableSet(pos);

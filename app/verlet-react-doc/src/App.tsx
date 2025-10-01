@@ -1,4 +1,4 @@
-import { VerletCanvas, LineSegments, Cloth, Tire } from 'verlet-react';
+import { VerletCanvas, LineSegments, Cloth, Tire, Point } from 'verlet-react';
 import { Vec2 } from 'verlet-engine';
 
 function App() {
@@ -17,7 +17,9 @@ function App() {
           stiffness={0.02}
           pins={[0, 4]}
         />
-        <Cloth
+        {/* <Point position={new Vec2(20, 300)} /> */}
+
+        {/* <Cloth
           origin={new Vec2(400, 100)}
           width={150}
           height={100}
@@ -31,7 +33,7 @@ function App() {
           segments={20}
           spokeStiffness={0.3}
           treadStiffness={0.9}
-        />
+        /> */}
       </VerletCanvas>
     </div>
   )

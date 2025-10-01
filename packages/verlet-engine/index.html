@@ -36,9 +36,30 @@
     segment.pin(2);
     segment.pin(4);
 
-    const tire1 = tire(sim, new Vec2(200,50), 50, 30, 0.3, 0.9);
     const tire2 = tire(sim, new Vec2(400,50), 70, 7, 0.1, 0.2);
     const tire3 = tire(sim, new Vec2(600,50), 70, 3, 1, 1);
+
+    // === TEST CUSTOM STYLES ===
+    // Style the line segment
+    segment.particles.forEach(p => {
+      p.style = { color: '#00ffff', radius: 4 }; // Cyan points
+    });
+    segment.constraints.forEach(c => {
+      if (c instanceof PinConstraint) {
+        c.style = { color: 'rgba(255,0,255,0.2)', radius: 10 }; // Transparent magenta pins
+      } else {
+        c.style = { color: '#ff00ff', lineWidth: 3 }; // Magenta rods
+      }
+    });
+
+    // Style the second tire
+    tire2.particles.forEach(p => {
+      p.style = { color: '#800080', radius: 3 }; // Purple points, size 3
+    });
+    tire2.constraints.forEach(c => {
+      c.style = { color: '#ffa500', lineWidth: 1 }; // Orange rods, width 1
+    });
+    // === END TEST CUSTOM STYLES ===
 
     // --- All the logic that was removed from the engine is now here, in the "UI layer" ---
 
@@ -102,8 +123,8 @@
 
             for (const p of c.particles) {
                 ctx.beginPath();
-                ctx.arc(p.pos.x, p.pos.y, 2, 0, 2 * Math.PI);
-                ctx.fillStyle = "#2dad8f";
+                ctx.arc(p.pos.x, p.pos.y, p.style?.radius || 2, 0, 2 * Math.PI);
+                ctx.fillStyle = p.style?.color || "#2dad8f";
                 ctx.fill();
             }
         }
