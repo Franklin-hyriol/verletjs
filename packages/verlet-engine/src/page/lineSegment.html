@@ -32,8 +32,7 @@
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
 
-    const sim = new VerletJS(width, height);
-    sim.friction = 1;
+    const sim = new VerletJS(width, height, { gravity: new Vec2(0, 0.5), friction: 0.9, groundFriction: 0.7, solverIterations: 10, restitution: 0.5 });
 
     const segment = lineSegments(sim, [new Vec2(20,10), new Vec2(40,10), new Vec2(60,10), new Vec2(80,10), new Vec2(100,10)], 0.8);
     segment.pin(0);
@@ -108,13 +107,17 @@
         }
     }
 
-    function loop() {
-      sim.frame(16);
+    let lastTimestamp = 0;
+    function loop(currentTimestamp) {
+      const deltaTime = (currentTimestamp - lastTimestamp) / 1000; // Convert to seconds
+      lastTimestamp = currentTimestamp;
+
+      sim.frame(deltaTime);
       draw();
       requestAnimationFrame(loop);
     };
 
-    loop();
+    requestAnimationFrame(loop);
   };
 </script>
 </body>
