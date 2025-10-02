@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Square Demo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #222;
+            color: #eee;
+            text-align: center;
+        }
+
+        canvas {
+            background: #fff;
+        }
+
+        nav {
+            margin: 10px;
+        }
+
+        nav a {
+            color: #0af;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a href="../../index.html">Home</a> |
+        <a href="lineSegment.html">Line Segment</a> |
+        <a href="tire.html">Tires</a> |
+        <a href="square.html">Square</a> |
+        <a href="spirale.html">Spirale</a>
+    </nav>
+    <h1>Test: Square</h1>
+    <canvas id="scratch" style="width: 800px; height: 500px;"></canvas>
+
+    <script type="module">
+        import { VerletJS, Vec2, PinConstraint, lineSegments, DistanceConstraint, Composite, Particle } from '../../dist/verlet-engine.es.js';
+
+        window.onload = function () {
+            const canvas = document.getElementById("scratch");
+            const ctx = canvas.getContext("2d");
+            const width = parseInt(canvas.style.width);
+            const height = parseInt(canvas.style.height);
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            const sim = new VerletJS(width, height, { gravity: new Vec2(0, 0), friction: 0.9, groundFriction: 0.7, solverIterations: 10, restitution: 0.5 });
+
+            const composite = new Composite();
+
+            const stiffness = 0.03;
+            const tensor = 0.3;
+
+            const origin = new Vec2(centerX, centerY); // Le centre de la toile
+            const maxOuterRadius = 200; // Rayon maximal de la toile
+            const numRadialSegments = 20; // Nombre de "rayons"
+            const numConcentricRings = 10; // Nombre d'anneaux concentriques
+
+            const angularStep = (2 * Math.PI) / numRadialSegments;
+            const totalParticles = numRadialSegments * numConcentricRings; // Nombre total de particules
+            const radiusDecrementPerParticle = maxOuterRadius / totalParticles; // De combien le rayon diminue par particule
+
+            for (let i = 0; i < totalParticles; ++i) {
+                const theta = i * angularStep + Math.cos(i * 0.4) * 0.05 + Math.cos(i * 0.05) * 0.2;
+                const shrinkingRadius = maxOuterRadius - radiusDecrementPerParticle * i + Math.cos(i * 0.1) * 20;
+
+                const verticalWaveOffset = Math.cos(theta * 2.1) * (maxOuterRadius / numConcentricRings) * 0.2;
+                composite.particles.push(new Particle(new Vec2(origin.x + Math.cos(theta) * shrinkingRadius, origin.y + Math.sin(theta) * shrinkingRadius + verticalWaveOffset)));
+            }
+
+            // 2. Épinglage des particules
+            for (let i = 0; i < numRadialSegments; i += 4) {
+                composite.constraints.push(new PinConstraint(composite.particles[i], composite.particles[i].pos));
+            }
+
+            // 3. Création des contraintes
+            for (let i = 0; i < totalParticles - 1; ++i) {
+                // neighbor constraint
+                composite.constraints.push(new DistanceConstraint(composite.particles[i], composite.particles[i + 1], stiffness));
+
+                // span rings (radial constraints)
+                const radialConnectionIndex = i + numRadialSegments;
+                if (radialConnectionIndex < totalParticles - 1) {
+                    composite.constraints.push(new DistanceConstraint(composite.particles[i], composite.particles[radialConnectionIndex], stiffness));
+                } else {
+                    composite.constraints.push(new DistanceConstraint(composite.particles[i], composite.particles[totalParticles - 1], stiffness));
+                }
+            }
+
+            // 4. Fermeture de l'anneau le plus extérieur
+            composite.constraints.push(new DistanceConstraint(composite.particles[0], composite.particles[numRadialSegments - 1], stiffness));
+
+            // 5. Application du tensor
+            for (const c of composite.constraints) {
+                if (c instanceof DistanceConstraint) {
+                    c.distance *= tensor;
+                }
+            }
+
+            sim.composites.push(composite);
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                for (const c of sim.composites) {
+                    for (const constraint of c.constraints) {
+                        if (typeof (constraint).draw === 'function') (constraint).draw(ctx);
+                    }
+                    for (const p of c.particles) {
+                        ctx.beginPath();
+                        ctx.arc(p.pos.x, p.pos.y, p.style?.radius || 2, 0, 2 * Math.PI);
+                        ctx.fillStyle = p.style?.color || "#2dad8f";
+                        ctx.fill();
+                    }
+                }
+            }
+
+            function loop() {
+                sim.frame();
+                draw();
+                requestAnimationFrame(loop);
+            };
+
+
+            loop();
+
+        }
+
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Square Demo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #222;
+            color: #eee;
+            text-align: center;
+        }
+
+        canvas {
+            background: #fff;
+        }
+
+        nav {
+            margin: 10px;
+        }
+
+        nav a {
+            color: #0af;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a href="../../index.html">Home</a> |
+        <a href="lineSegment.html">Line Segment</a> |
+        <a href="tire.html">Tires</a> |
+        <a href="square.html">Square</a> |
+        <a href="spirale.html">Spirale</a>
+    </nav>
+    <h1>Test: Spirale</h1>
+
+    <canvas id="c" width="600" height="600"></canvas>
+    <script>
+        const c = document.getElementById('c');
+        const ctx = c.getContext('2d');
+
+        const centerX = c.width / 2;
+        const centerY = c.height / 2;
+
+        const a = 0;     // point de départ
+        const b = 5;     // vitesse à laquelle ça s’éloigne
+        const points = [];
+
+
+        for (let i = 0; i < 100; i++) {
+            const theta = i * 0.3;
+            const r = a + b * theta;
+            const x = centerX + r * Math.cos(theta); // ajouter centerX
+            const y = centerY + r * Math.sin(theta); // ajouter centerY
+            points.push({ x, y });
+
+            // Dessiner un petit cercle
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2); // rayon = 3
+            ctx.fillStyle = "red";
+            ctx.fill();
+        }
+    </script>
+
+</body>
+
+</html>
