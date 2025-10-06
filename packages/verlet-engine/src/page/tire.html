@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Test: Tires</title>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #222;
+      color: #eee;
+      text-align: center;
+    }
+
+    canvas {
+      background: #fff;
+    }
+
+    nav {
+      margin: 10px;
+    }
+
+    nav a {
+      color: #0af;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+  <nav>
+    <a href="../../index.html">Home</a> |
+        <a href="lineSegment.html">Line Segment</a> |
+        <a href="tire.html">Tires</a> |
+        <a href="square.html">Square</a> |
+        <a href="spirale.html">Spirale</a> |
+        <a href="CollisionConstraint.html">Collision Constraint</a>
+  </nav>
+  <h1>Test: Tires</h1>
+  <canvas id="scratch" style="width: 800px; height: 500px;"></canvas>
+
+  <script type="module">
+    import { VerletJS, Vec2, PinConstraint, tire } from '../../dist/verlet-engine.es.js';
+
+    window.onload = function () {
+      const canvas = document.getElementById("scratch");
+      const ctx = canvas.getContext("2d");
+      const width = parseInt(canvas.style.width);
+      const height = parseInt(canvas.style.height);
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const sim = new VerletJS(width, height, { gravity: new Vec2(0, 0.2), friction: 0.99, groundFriction: 0.6, solverIterations: 15, restitution: 0.8 });
+
+      const tire2 = tire(sim, new Vec2(400, 50), 70, 7, 0.1, 0.2);
+      const tire3 = tire(sim, new Vec2(600, 50), 70, 3, 1, 1);
+
+      // Style the second tire
+      tire2.particles.forEach(p => {
+        p.style = { color: '#800080', radius: 3 }; // Purple points, size 3
+      });
+      tire2.constraints.forEach(c => {
+        c.style = { color: '#ffa500', lineWidth: 1 }; // Orange rods, width 1
+      });
+
+      let draggedEntity = null;
+      const mouse = new Vec2(0, 0);
+      const selectionRadius = 20;
+      const highlightColor = "#4f545c";
+
+      function nearestEntity() {
+        let d2Nearest = Infinity;
+        let entity = null;
+        for (const c of sim.composites) {
+          for (const p of c.particles) {
+            const d2 = p.pos.dist2(mouse);
+            if (d2 < d2Nearest && d2 < selectionRadius * selectionRadius) {
+              entity = p;
+              d2Nearest = d2;
+            }
+          }
+        }
+        for (const c of sim.composites) {
+          for (const constraint of c.constraints) {
+            if (constraint instanceof PinConstraint && constraint.a === entity) return constraint;
+          }
+        }
+        return entity;
+      }
+
+      canvas.onmousedown = function (e) { draggedEntity = nearestEntity(); };
+      canvas.onmouseup = function (e) { draggedEntity = null; };
+      canvas.onmousemove = function (e) {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+        if (draggedEntity) draggedEntity.pos.mutableSet(mouse);
+      };
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+        for (const c of sim.composites) {
+          for (const constraint of c.constraints) {
+            if (typeof (constraint).draw === 'function') (constraint).draw(ctx);
+          }
+          for (const p of c.particles) {
+            ctx.beginPath();
+            ctx.arc(p.pos.x, p.pos.y, p.style?.radius || 2, 0, 2 * Math.PI);
+            ctx.fillStyle = p.style?.color || "#2dad8f";
+            ctx.fill();
+          }
+        }
+        const nearest = draggedEntity || nearestEntity();
+        if (nearest) {
+          ctx.beginPath();
+          ctx.arc(nearest.pos.x, nearest.pos.y, 8, 0, 2 * Math.PI);
+          ctx.strokeStyle = highlightColor;
+          ctx.stroke();
+        }
+      }
+
+      let lastTimestamp = 0;
+      function loop(currentTimestamp) {
+        const deltaTime = (currentTimestamp - lastTimestamp) / 1000; // Convert to seconds
+        lastTimestamp = currentTimestamp;
+
+        sim.frame(deltaTime);
+        draw();
+        requestAnimationFrame(loop);
+      };
+
+      loop();
+    };
+  </script>
+</body>
+
+</html>

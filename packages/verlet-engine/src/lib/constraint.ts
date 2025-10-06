@@ -24,6 +24,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import type { Particle } from './verlet';
 import { Vec2 } from './vec2';
+import type { ConstraintStyle } from './types';
+
 
 /**
  * Constrains two particles to a specific distance from each other.
@@ -37,6 +39,8 @@ export class DistanceConstraint {
 	distance: number;
 	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
 	stiffness: number;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
 
 	/**
 	 * @param a The first particle.
@@ -71,8 +75,69 @@ export class DistanceConstraint {
 		ctx.beginPath();
 		ctx.moveTo(this.a.pos.x, this.a.pos.y);
 		ctx.lineTo(this.b.pos.x, this.b.pos.y);
-		ctx.strokeStyle = "#d8dde2";
+		ctx.strokeStyle = this.style?.color || "#d8dde2";
+		ctx.lineWidth = this.style?.lineWidth || 1;
 		ctx.stroke();
+	}
+}
+
+/**
+ * Constrains two particles to prevent them from overlapping.
+ */
+export class CollisionConstraint {
+	/** The first particle. */
+	a: Particle;
+	/** The second particle. */
+	b: Particle;
+	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
+	stiffness: number;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
+
+	/**
+	 * @param a The first particle.
+	 * @param b The second particle.
+	 * @param stiffness A value from 0.0 to 1.0, where 1.0 is the most stiff.
+	 */
+	constructor(a: Particle, b: Particle, stiffness: number) {
+		this.a = a;
+		this.b = b;
+		this.stiffness = stiffness;
+	}
+
+	/**
+	 * Relaxes the constraint, attempting to satisfy it by moving the particles.
+	 * @param stepCoef A coefficient for the relaxation step.
+	 */
+	relax(stepCoef: number) {
+		const normal = this.a.pos.sub(this.b.pos);
+		const m = normal.length();
+		const r1 = this.a.style?.radius || 1;
+		const r2 = this.b.style?.radius || 1;
+		const minDistance = r1 + r2;
+
+		if (m < minDistance) {
+			const diff = (minDistance - m) / m;
+			normal.mutableScale(diff * this.stiffness * stepCoef);
+			this.a.pos.mutableAdd(normal);
+			this.b.pos.mutableSub(normal);
+		}
+	}
+
+	/**
+	 * Draws the constraint on a 2D canvas context.
+	 * @param ctx The canvas context to draw on.
+	 */
+	draw(ctx: CanvasRenderingContext2D) {
+		// Collisions are not typically drawn, but you could draw a line for debugging.
+		/*
+		ctx.beginPath();
+		ctx.moveTo(this.a.pos.x, this.a.pos.y);
+		ctx.lineTo(this.b.pos.x, this.b.pos.y);
+		ctx.strokeStyle = this.style?.color || 'red';
+		ctx.lineWidth = this.style?.lineWidth || 1;
+		ctx.stroke();
+		*/
 	}
 }
 
@@ -84,6 +149,8 @@ export class PinConstraint {
 	a: Particle;
 	/** The fixed point in space where the particle is pinned. */
 	pos: Vec2;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
 
 	/**
 	 * @param a The particle to be pinned.
@@ -108,8 +175,8 @@ export class PinConstraint {
 	 */
 	draw(ctx: CanvasRenderingContext2D) {
 		ctx.beginPath();
-		ctx.arc(this.pos.x, this.pos.y, 6, 0, 2 * Math.PI);
-		ctx.fillStyle = "rgba(0,153,255,0.1)";
+		ctx.arc(this.pos.x, this.pos.y, this.style?.radius || 6, 0, 2 * Math.PI);
+		ctx.fillStyle = this.style?.color || "rgba(0,153,255,0.1)";
 		ctx.fill();
 	}
 }
@@ -128,6 +195,8 @@ export class AngleConstraint {
 	angle: number;
 	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
 	stiffness: number;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
 
 	/**
 	 * @param a The first particle.
@@ -144,7 +213,7 @@ export class AngleConstraint {
 	}
 
 	/**
-	 * Relaxes the constraint by rotating the particles to satisfy the angle.
+	 * Relaxes the constraint by rotating the particles to satisfy the.
 	 * @param stepCoef A coefficient for the relaxation step.
 	 */
 	relax(stepCoef: number) {
@@ -174,9 +243,77 @@ export class AngleConstraint {
 		ctx.lineTo(this.b.pos.x, this.b.pos.y);
 		ctx.lineTo(this.c.pos.x, this.c.pos.y);
 		const tmp = ctx.lineWidth;
-		ctx.lineWidth = 5;
-		ctx.strokeStyle = "rgba(255,255,0,0.2)";
+		ctx.lineWidth = this.style?.lineWidth || 5;
+		ctx.strokeStyle = this.style?.color || "rgba(255,255,0,0.2)";
 		ctx.stroke();
 		ctx.lineWidth = tmp;
+	}
+}
+
+/**
+ * Constrains two particles to a specific distance from each other.
+ */
+export class MinMaxDistanceConstraint {
+	/** The first particle. */
+	a: Particle;
+	/** The second particle. */
+	b: Particle;
+	/** The minimum distance between the two particles. */
+	minDistance: number;
+	/** The maximum distance between the two particles. */
+	maxDistance: number;
+	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
+	stiffness: number;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
+
+	/**
+	 * @param a The first particle.
+	 * @param b The second particle.
+	 * @param stiffness A value from 0.0 to 1.0, where 1.0 is the most stiff.
+	 * @param minDistance The minimum distance to maintain.
+	 * @param maxDistance The maximum distance to maintain.
+	 */
+	constructor(a: Particle, b: Particle, minDistance: number, maxDistance: number, stiffness: number) {
+		this.a = a;
+		this.b = b;
+		this.stiffness = stiffness;
+		this.minDistance = minDistance;
+		this.maxDistance = maxDistance;
+	}
+
+	/**
+	 * Relaxes the constraint, attempting to satisfy it by moving the particles.
+	 * @param stepCoef A coefficient for the relaxation step.
+	 */
+	relax(stepCoef: number) {
+		const normal = this.a.pos.sub(this.b.pos);
+		const m = normal.length();
+		let diff = 0;
+
+		if (m < this.minDistance) {
+			diff = (this.minDistance - m) / m;
+		} else if (m > this.maxDistance) {
+			diff = (this.maxDistance - m) / m;
+		} else {
+			return;
+		}
+
+		normal.mutableScale(diff * this.stiffness * stepCoef);
+		this.a.pos.mutableAdd(normal);
+		this.b.pos.mutableSub(normal);
+	}
+
+	/**
+	 * Draws the constraint on a 2D canvas context.
+	 * @param ctx The canvas context to draw on.
+	 */
+	draw(ctx: CanvasRenderingContext2D) {
+		ctx.beginPath();
+		ctx.moveTo(this.a.pos.x, this.a.pos.y);
+		ctx.lineTo(this.b.pos.x, this.b.pos.y);
+		ctx.strokeStyle = this.style?.color || '#d8dde2';
+		ctx.lineWidth = this.style?.lineWidth || 1;
+		ctx.stroke();
 	}
 }

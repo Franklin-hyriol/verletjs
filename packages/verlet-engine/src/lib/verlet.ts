@@ -23,14 +23,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import { Vec2 } from './vec2';
-import { DistanceConstraint, PinConstraint, AngleConstraint } from './constraint';
+import { DistanceConstraint, PinConstraint, AngleConstraint, CollisionConstraint, MinMaxDistanceConstraint } from './constraint';
+import type { ParticleStyle } from './types';
 
-// Polyfill for requestAnimationFrame
-if (typeof window !== 'undefined' && !window.requestAnimationFrame) {
-    window.requestAnimationFrame = function(callback: FrameRequestCallback): number {
-        return window.setTimeout(() => callback(performance.now()), 1000 / 60);
-    };
-}
 
 /**
  * Represents a simple particle in the physics simulation.
@@ -40,6 +35,8 @@ export class Particle {
 	pos: Vec2;
 	/** Position of the particle in the previous frame, used to calculate velocity. @type {Vec2} */
 	lastPos: Vec2;
+  /** Optional style for rendering */
+  style?: ParticleStyle;
 
 	constructor(pos: Vec2) {
 		this.pos = new Vec2().mutableSet(pos);
@@ -52,7 +49,7 @@ export class Particle {
  */
 export class Composite {
 	particles: Particle[] = [];
-	constraints: (DistanceConstraint | PinConstraint | AngleConstraint)[] = [];
+	constraints: (DistanceConstraint | PinConstraint | AngleConstraint | CollisionConstraint | MinMaxDistanceConstraint)[] = [];
 
 	/**
 	 * Pins a particle in the composite to a specific location.
@@ -79,11 +76,15 @@ export class VerletJS {
 	height: number;
 
 	/** Global gravity vector applied to all particles. */
-	gravity = new Vec2(0, 0.2);
+	gravity: Vec2;
 	/** Friction factor to apply to particle velocities. A value of 1 means no friction. */
-	friction = 0.99;
+	friction: number;
 	/** Friction factor applied when a particle is on the ground. */
-	groundFriction = 0.8;
+	groundFriction: number;
+	/** Number of iterations for the constraint solver per frame. */
+	solverIterations: number;
+	/** Coefficient of restitution (bounciness) for collisions with boundaries. */
+	restitution: number;
 
 	/** A list of all composite entities in the simulation. */
 	composites: Composite[] = [];
@@ -92,10 +93,31 @@ export class VerletJS {
 	 * Creates a new physics simulation world.
 	 * @param {number} width The width of the simulation world.
 	 * @param {number} height The height of the simulation world.
+	 * @param {object} [options] Optional configuration options.
+	 * @param {Vec2} [options.gravity=new Vec2(0, 0.2)] Global gravity vector.
+	 * @param {number} [options.friction=0.99] Friction factor.
+	 * @param {number} [options.groundFriction=0.8] Ground friction factor.
+	 * @param {number} [options.solverIterations=8] Number of iterations for the constraint solver.
+	 * @param {number} [options.restitution=0.2] Coefficient of restitution for boundary collisions.
 	 */
-	constructor(width: number, height: number) {
+	constructor(
+		width: number,
+		height: number,
+		options?: {
+			gravity?: Vec2;
+			friction?: number;
+			groundFriction?: number;
+			solverIterations?: number;
+			restitution?: number;
+		}
+	) {
 		this.width = width;
 		this.height = height;
+		this.gravity = options?.gravity || new Vec2(0, 0.2);
+		this.friction = options?.friction || 0.99;
+		this.groundFriction = options?.groundFriction || 0.8;
+		this.solverIterations = options?.solverIterations || 8;
+		this.restitution = options?.restitution || 0.2;
 	}
 
 	/**
@@ -103,21 +125,27 @@ export class VerletJS {
 	 * @param {Particle} particle The particle to constrain.
 	 */
 	bounds = (particle: Particle) => {
-		if (particle.pos.y > this.height - 1)
+		if (particle.pos.y > this.height - 1) {
 			particle.pos.y = this.height - 1;
+			particle.lastPos.y = particle.pos.y + (particle.pos.y - particle.lastPos.y) * this.restitution;
+		}
 
-		if (particle.pos.x < 0)
+		if (particle.pos.x < 0) {
 			particle.pos.x = 0;
+			particle.lastPos.x = particle.pos.x + (particle.pos.x - particle.lastPos.x) * this.restitution;
+		}
 
-		if (particle.pos.x > this.width - 1)
+		if (particle.pos.x > this.width - 1) {
 			particle.pos.x = this.width - 1;
+			particle.lastPos.x = particle.pos.x + (particle.pos.x - particle.lastPos.x) * this.restitution;
+		}
 	}
 
 	/**
 	 * Advances the simulation by one time step.
-	 * @param {number} step The duration of the time step, e.g., 16.
+	 * @param {number} deltaTime The time elapsed since the last frame, in seconds.
 	 */
-	frame(step: number) {
+	frame(deltaTime: number) {
 		for (const c of this.composites) {
 			for (const p of c.particles) {
 				const velocity = p.pos.sub(p.lastPos).scale(this.friction);
@@ -135,9 +163,9 @@ export class VerletJS {
 			}
 		}
 
-		const stepCoef = 1 / step;
+		const stepCoef = 1 / this.solverIterations;
 		for (const c of this.composites) {
-			for (let i = 0; i < step; ++i) {
+			for (let i = 0; i < this.solverIterations; ++i) {
 				for (const constraint of c.constraints) {
 					constraint.relax(stepCoef);
                 }
