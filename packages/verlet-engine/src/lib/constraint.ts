@@ -82,6 +82,66 @@ export class DistanceConstraint {
 }
 
 /**
+ * Constrains two particles to prevent them from overlapping.
+ */
+export class CollisionConstraint {
+	/** The first particle. */
+	a: Particle;
+	/** The second particle. */
+	b: Particle;
+	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
+	stiffness: number;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
+
+	/**
+	 * @param a The first particle.
+	 * @param b The second particle.
+	 * @param stiffness A value from 0.0 to 1.0, where 1.0 is the most stiff.
+	 */
+	constructor(a: Particle, b: Particle, stiffness: number) {
+		this.a = a;
+		this.b = b;
+		this.stiffness = stiffness;
+	}
+
+	/**
+	 * Relaxes the constraint, attempting to satisfy it by moving the particles.
+	 * @param stepCoef A coefficient for the relaxation step.
+	 */
+	relax(stepCoef: number) {
+		const normal = this.a.pos.sub(this.b.pos);
+		const m = normal.length();
+		const r1 = this.a.style?.radius || 1;
+		const r2 = this.b.style?.radius || 1;
+		const minDistance = r1 + r2;
+
+		if (m < minDistance) {
+			const diff = (minDistance - m) / m;
+			normal.mutableScale(diff * this.stiffness * stepCoef);
+			this.a.pos.mutableAdd(normal);
+			this.b.pos.mutableSub(normal);
+		}
+	}
+
+	/**
+	 * Draws the constraint on a 2D canvas context.
+	 * @param ctx The canvas context to draw on.
+	 */
+	draw(ctx: CanvasRenderingContext2D) {
+		// Collisions are not typically drawn, but you could draw a line for debugging.
+		/*
+		ctx.beginPath();
+		ctx.moveTo(this.a.pos.x, this.a.pos.y);
+		ctx.lineTo(this.b.pos.x, this.b.pos.y);
+		ctx.strokeStyle = this.style?.color || 'red';
+		ctx.lineWidth = this.style?.lineWidth || 1;
+		ctx.stroke();
+		*/
+	}
+}
+
+/**
  * Constrains a particle to a fixed point in space.
  */
 export class PinConstraint {

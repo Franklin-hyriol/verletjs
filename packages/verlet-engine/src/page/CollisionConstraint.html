@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <title>Test: Tires</title>
+  <title>Test: Collision Constraint</title>
   <meta charset="UTF-8" />
   <style>
     body {
@@ -30,17 +30,20 @@
 <body>
   <nav>
     <a href="../../index.html">Home</a> |
-        <a href="lineSegment.html">Line Segment</a> |
-        <a href="tire.html">Tires</a> |
-        <a href="square.html">Square</a> |
-        <a href="spirale.html">Spirale</a> |
-        <a href="CollisionConstraint.html">Collision Constraint</a>
+    <a href="lineSegment.html">Line Segment</a> |
+    <a href="tire.html">Tires</a> |
+    <a href="square.html">Square</a> |
+    <a href="spirale.html">Spirale</a> |
+    <a href="CollisionConstraint.html">Collision Constraint</a>
   </nav>
-  <h1>Test: Tires</h1>
+  <h1>Test: Collision Constraint</h1>
+  <p>Cette démonstration montre la `CollisionConstraint` en action.<br/>
+     Chaque pneu est un composite de particules. Une `CollisionConstraint` est ajoutée entre chaque particule de chaque pneu.<br/>
+     Cela empêche les pneus de passer à travers les autres.</p>
   <canvas id="scratch" style="width: 800px; height: 500px;"></canvas>
 
   <script type="module">
-    import { VerletJS, Vec2, PinConstraint, tire } from '../../dist/verlet-engine.es.js';
+    import { VerletJS, Vec2, tire, CollisionConstraint, Composite } from '../../dist/verlet-engine.es.js';
 
     window.onload = function () {
       const canvas = document.getElementById("scratch");
@@ -52,18 +55,43 @@
       canvas.height = height * dpr;
       ctx.scale(dpr, dpr);
 
-      const sim = new VerletJS(width, height, { gravity: new Vec2(0, 0.2), friction: 0.99, groundFriction: 0.6, solverIterations: 15, restitution: 0.8 });
+      const sim = new VerletJS(width, height, { gravity: new Vec2(0, 0.2), friction: 0.99, groundFriction: 0.8, solverIterations: 15, restitution: 0.8 });
 
-      const tire2 = tire(sim, new Vec2(400, 50), 70, 7, 0.1, 0.2);
-      const tire3 = tire(sim, new Vec2(600, 50), 70, 3, 1, 1);
+      // create three tires
+      const tire1 = tire(sim, new Vec2(200, 50), 50, 7, 0.1, 0.2);
+      const tire2 = tire(sim, new Vec2(400, 50), 50, 7, 0.1, 0.2);
+      const tire3 = tire(sim, new Vec2(600, 50), 50, 7, 0.1, 0.2);
+      
+      // give them initial velocity
+      tire1.particles.forEach(p => { p.lastPos.x -= 4; });
+      tire3.particles.forEach(p => { p.lastPos.x += 4; });
 
-      // Style the second tire
-      tire2.particles.forEach(p => {
-        p.style = { color: '#800080', radius: 3 }; // Purple points, size 3
-      });
-      tire2.constraints.forEach(c => {
-        c.style = { color: '#ffa500', lineWidth: 1 }; // Orange rods, width 1
-      });
+      // Style the tires
+      tire1.particles.forEach(p => { p.style = { color: '#2dad8f', radius: 3 }; });
+      tire1.constraints.forEach(c => { c.style = { color: '#2dad8f', lineWidth: 1 }; });
+      tire2.particles.forEach(p => { p.style = { color: '#800080', radius: 3 }; });
+      tire2.constraints.forEach(c => { c.style = { color: '#800080', lineWidth: 1 }; });
+      tire3.particles.forEach(p => { p.style = { color: '#ffa500', radius: 3 }; });
+      tire3.constraints.forEach(c => { c.style = { color: '#ffa500', lineWidth: 1 }; });
+
+      // create a composite for collision constraints
+      const collisionComposite = new Composite();
+      const tires = [tire1, tire2, tire3];
+
+      // add collision constraints between particles of different tires
+      for (let i = 0; i < tires.length; i++) {
+        for (let j = i + 1; j < tires.length; j++) {
+          const particles1 = tires[i].particles;
+          const particles2 = tires[j].particles;
+          for (const p1 of particles1) {
+            for (const p2 of particles2) {
+              collisionComposite.constraints.push(new CollisionConstraint(p1, p2, 0.8));
+            }
+          }
+        }
+      }
+
+      sim.composites.push(collisionComposite);
 
       let draggedEntity = null;
       const mouse = new Vec2(0, 0);
@@ -80,11 +108,6 @@
               entity = p;
               d2Nearest = d2;
             }
-          }
-        }
-        for (const c of sim.composites) {
-          for (const constraint of c.constraints) {
-            if (constraint instanceof PinConstraint && constraint.a === entity) return constraint;
           }
         }
         return entity;
