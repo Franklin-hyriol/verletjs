@@ -1,0 +1,63 @@
+---
+sidebar_position: 1
+---
+
+# Particles
+
+In a Verlet integration simulation, the world is made of particles (also called points). A particle is the simplest and most fundamental object.
+
+## What is a Particle?
+
+A particle is essentially a point in space that has a few basic properties:
+- A **current position** (`pos`)
+- An **old position** (`oldpos`)
+- An **acceleration** (`acc`)
+- A **mass**
+
+You might notice that there is no `velocity` property. This is the key characteristic of Verlet integration. A particle's velocity is implicitly calculated by comparing its current position to its old position. This makes the simulation very stable.
+
+## Creating a Particle
+
+Here is how you can create a single particle in your simulation.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  In `verlet-react`, you use the `<Point>` component to create a particle. You just need to provide its initial position.
+
+  ```jsx
+  import React from 'react';
+  import { VerletCanvas, Point } from 'verlet-react';
+
+  const App = () => {
+    return (
+      <VerletCanvas>
+        {/* This creates a particle at position (100, 100) */}
+        <Point position={{ x: 100, y: 100 }} />
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  In `verlet-engine`, you create an instance of the `Particle` class.
+
+  ```javascript
+  import { VerletJS, Particle, Vec2 } from 'verlet-engine';
+
+  const sim = new VerletJS(500, 500);
+
+  // This creates a particle at position (100, 100)
+  const particle = new Particle(new Vec2(100, 100));
+
+  // Don't forget to add it to the simulation
+  sim.composites.push({ particles: [particle], constraints: [] });
+  ```
+
+  </TabItem>
+</Tabs>

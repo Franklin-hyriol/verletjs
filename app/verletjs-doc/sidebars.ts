@@ -4,6 +4,11 @@ const sidebars: SidebarsConfig = {
   tutorialSidebar: [
     'intro',
     'getting-started',
+    {
+      type: 'category',
+      label: 'Core Concepts',
+      items: ['core-concepts/particles', 'core-concepts/constraints'],
+    },
   ],
 };
 

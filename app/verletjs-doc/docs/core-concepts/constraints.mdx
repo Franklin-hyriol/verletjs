@@ -1,0 +1,71 @@
+---
+sidebar_position: 2
+---
+
+# Constraints
+
+Particles on their own are not very interesting. Constraints are what bring them to life.
+
+A constraint is a rule that particles must follow. The most common type is the **Distance Constraint**, which forces two particles to remain at a fixed distance from each other. By connecting multiple particles with distance constraints, you can create any shape you can imagine, from simple ropes to complex cloth simulations.
+
+## Creating a Constraint
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  In `verlet-react`, you typically don't work with individual constraints directly. Instead, you use higher-level components that manage constraints for you.
+
+  For example, the `<LineSegments>` component creates a chain of particles connected by distance constraints.
+
+  ```jsx
+  import { VerletCanvas, LineSegments } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const App = () => {
+    return (
+      <VerletCanvas>
+        {/* This creates 5 points and connects them with 4 distance constraints */}
+        <LineSegments
+          vertices={[
+            new Vec2(100, 100),
+            new Vec2(200, 100),
+            new Vec2(300, 100),
+            new Vec2(400, 100),
+            new Vec2(500, 100),
+          ]}
+        />
+      </VerletCanvas>
+    );
+  };
+  ```
+  This approach makes it easier to build complex structures without worrying about the underlying constraint system.
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  In `verlet-engine`, you can create constraints manually. The most common one is `DistanceConstraint`.
+
+  ```javascript
+  import { VerletJS, Particle, DistanceConstraint, Vec2 } from 'verlet-engine';
+
+  const sim = new VerletJS(500, 500);
+
+  const p1 = new Particle(new Vec2(100, 100));
+  const p2 = new Particle(new Vec2(200, 100));
+
+  // A constraint that keeps p1 and p2 at 100px distance
+  const constraint = new DistanceConstraint(p1, p2, 1, 100);
+
+  const composite = {
+    particles: [p1, p2],
+    constraints: [constraint],
+  };
+
+  sim.composites.push(composite);
+  ```
+
+  </TabItem>
+</Tabs>
