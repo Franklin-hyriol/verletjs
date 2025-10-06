@@ -153,7 +153,7 @@ export class AngleConstraint {
 	}
 
 	/**
-	 * Relaxes the constraint by rotating the particles to satisfy the angle.
+	 * Relaxes the constraint by rotating the particles to satisfy the.
 	 * @param stepCoef A coefficient for the relaxation step.
 	 */
 	relax(stepCoef: number) {
@@ -187,5 +187,73 @@ export class AngleConstraint {
 		ctx.strokeStyle = this.style?.color || "rgba(255,255,0,0.2)";
 		ctx.stroke();
 		ctx.lineWidth = tmp;
+	}
+}
+
+/**
+ * Constrains two particles to a specific distance from each other.
+ */
+export class MinMaxDistanceConstraint {
+	/** The first particle. */
+	a: Particle;
+	/** The second particle. */
+	b: Particle;
+	/** The minimum distance between the two particles. */
+	minDistance: number;
+	/** The maximum distance between the two particles. */
+	maxDistance: number;
+	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
+	stiffness: number;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
+
+	/**
+	 * @param a The first particle.
+	 * @param b The second particle.
+	 * @param stiffness A value from 0.0 to 1.0, where 1.0 is the most stiff.
+	 * @param minDistance The minimum distance to maintain.
+	 * @param maxDistance The maximum distance to maintain.
+	 */
+	constructor(a: Particle, b: Particle, minDistance: number, maxDistance: number, stiffness: number) {
+		this.a = a;
+		this.b = b;
+		this.stiffness = stiffness;
+		this.minDistance = minDistance;
+		this.maxDistance = maxDistance;
+	}
+
+	/**
+	 * Relaxes the constraint, attempting to satisfy it by moving the particles.
+	 * @param stepCoef A coefficient for the relaxation step.
+	 */
+	relax(stepCoef: number) {
+		const normal = this.a.pos.sub(this.b.pos);
+		const m = normal.length();
+		let diff = 0;
+
+		if (m < this.minDistance) {
+			diff = (this.minDistance - m) / m;
+		} else if (m > this.maxDistance) {
+			diff = (this.maxDistance - m) / m;
+		} else {
+			return;
+		}
+
+		normal.mutableScale(diff * this.stiffness * stepCoef);
+		this.a.pos.mutableAdd(normal);
+		this.b.pos.mutableSub(normal);
+	}
+
+	/**
+	 * Draws the constraint on a 2D canvas context.
+	 * @param ctx The canvas context to draw on.
+	 */
+	draw(ctx: CanvasRenderingContext2D) {
+		ctx.beginPath();
+		ctx.moveTo(this.a.pos.x, this.a.pos.y);
+		ctx.lineTo(this.b.pos.x, this.b.pos.y);
+		ctx.strokeStyle = this.style?.color || '#d8dde2';
+		ctx.lineWidth = this.style?.lineWidth || 1;
+		ctx.stroke();
 	}
 }

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Square Demo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #222;
+            color: #eee;
+            text-align: center;
+        }
+
+        canvas {
+            background: #fff;
+        }
+
+        nav {
+            margin: 10px;
+        }
+
+        nav a {
+            color: #0af;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a href="../../index.html">Home</a> |
+        <a href="lineSegment.html">Line Segment</a> |
+        <a href="tire.html">Tires</a> |
+        <a href="square.html">Square</a> |
+        <a href="spirale.html">Spirale</a>
+    </nav>
+    <h1>Test: Square</h1>
+    <canvas id="scratch" style="width: 800px; height: 500px;"></canvas>
+
+    <script type="module">
+        import { VerletJS, Vec2, PinConstraint, lineSegments, DistanceConstraint, Composite, Particle, MinMaxDistanceConstraint } from '../../dist/verlet-engine.es.js';
+
+        window.onload = function () {
+            const canvas = document.getElementById("scratch");
+            const ctx = canvas.getContext("2d");
+            const width = parseInt(canvas.style.width);
+            const height = parseInt(canvas.style.height);
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const sim = new VerletJS(width, height, { gravity: new Vec2(0, 0.5), friction: 0.9, groundFriction: 0.7, solverIterations: 10, restitution: 0.5 });
+
+            const composite = new Composite();
+
+            const a = new Particle((new Vec2(100, 100)));
+            const b = new Particle((new Vec2(200, 100)));
+            const c = new Particle((new Vec2(300, 100)));
+            const d = new Particle((new Vec2(400, 100)));
+
+            composite.particles.push(a);
+            composite.particles.push(b);
+            composite.particles.push(c);
+            composite.particles.push(d);
+
+            const stiffness = 1;
+
+            composite.constraints.push(new MinMaxDistanceConstraint(a, b, 50, 50, stiffness));
+            composite.constraints.push(new MinMaxDistanceConstraint(b, c, 50, 50, stiffness));
+            composite.constraints.push(new MinMaxDistanceConstraint(c, d, 50, 50, stiffness));
+
+            composite.constraints.push(new PinConstraint(a, a.pos));
+            composite.constraints.push(new PinConstraint(d, d.pos));
+
+            composite.particles.forEach(p => {
+                p.style = { color: '#ffff00', radius: 5 }; // Yellow points
+            });
+
+            composite.constraints.forEach(c => {
+                if (c instanceof PinConstraint) {
+                    c.style = { color: 'rgba(255,0,255,0.2)', radius: 10 }; // Transparent magenta pins
+                } else {
+                    c.style = { color: '#ff00ff', lineWidth: 3 }; // Magenta rods
+                }
+            });
+
+            sim.composites.push(composite);
+
+            let draggedEntity = null;
+            const mouse = new Vec2(0, 0);
+            const selectionRadius = 20;
+            const highlightColor = "#4f545c";
+
+            /**
+             * Trouve l'entité la plus proche de la souris (particule ou épingle).
+             * @returns {Particle | PinConstraint | null} L'entité trouvée, ou null.
+             */
+            function nearestEntity() {
+                let d2Nearest = Infinity;
+                let entity = null;
+
+                // 1. Trouve la particule la plus proche
+                for (const c of sim.composites) {
+                    for (const p of c.particles) {
+                        const d2 = p.pos.dist2(mouse); // Utilise la distance au carré pour l'efficacité
+                        if (d2 < d2Nearest && d2 < selectionRadius * selectionRadius) {
+                            entity = p;
+                            d2Nearest = d2;
+                        }
+                    }
+                }
+
+                // 2. Si la particule trouvée est épinglée, retourne l'épingle elle-même.
+                //    Ceci permet de déplacer l'épingle plutôt que la particule directement.
+                for (const c of sim.composites) {
+                    for (const constraint of c.constraints) {
+                        if (constraint instanceof PinConstraint && constraint.a === entity) {
+                            return constraint;
+                        }
+                    }
+                }
+
+                return entity;
+            }
+
+            // Gère le clic de la souris pour commencer à faire glisser une entité
+            canvas.onmousedown = function (e) {
+                // Trouve l'entité (particule ou épingle) la plus proche de la souris
+                draggedEntity = nearestEntity();
+            };
+
+            // Gère le relâchement du clic de la souris pour arrêter de faire glisser
+            canvas.onmouseup = function (e) {
+                draggedEntity = null;
+            };
+
+            // Gère le mouvement de la souris
+            canvas.onmousemove = function (e) {
+                // Met à jour les coordonnées de la souris par rapport au canvas
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - rect.left;
+                mouse.y = e.clientY - rect.top;
+
+                // Si aucune entité n'est en cours de glissement, on ne fait rien
+                if (!draggedEntity) return;
+
+                // Si l'entité glissée est une épingle (PinConstraint)
+                if (draggedEntity instanceof PinConstraint) {
+                    // Logique spécifique pour la chaîne
+                    const ropeSegments = sim.composites[0].constraints.filter(c => c instanceof MinMaxDistanceConstraint);
+                    const pins = sim.composites[0].constraints.filter(c => c instanceof PinConstraint);
+
+                    // S'assure qu'on a bien une chaîne avec deux épingles
+                    if (ropeSegments.length > 0 && pins.length === 2) {
+                        // Calcule la longueur maximale de la chaîne
+                        const maxLength = ropeSegments.reduce((sum, s) => sum + s.maxDistance, 0);
+                        // Trouve l'autre épingle (celle qui n'est pas glissée)
+                        const otherPin = (draggedEntity === pins[0]) ? pins[1] : pins[0];
+                        const otherPinPos = otherPin.pos;
+                        // Calcule la distance entre la souris et l'autre épingle
+                        const dist = mouse.dist(otherPinPos);
+
+                        // Si la distance est supérieure à la longueur maximale de la chaîne
+                        if (dist > maxLength) {
+                            // Calcule la direction de l'autre épingle vers la souris
+                            const direction = mouse.sub(otherPinPos);
+                            // Redimensionne ce vecteur pour qu'il ait exactement la longueur maximale
+                            direction.mutableScale(maxLength / dist);
+                            // Calcule la nouvelle position de l'épingle glissée (bloquée à la distance max)
+                            const newPos = otherPinPos.add(direction);
+                            draggedEntity.pos.mutableSet(newPos);
+                        } else {
+                            // Sinon, déplace l'épingle normalement sur la souris
+                            draggedEntity.pos.mutableSet(mouse);
+                        }
+                    } else {
+                        // Comportement par défaut si ce n'est pas une chaîne simple
+                        draggedEntity.pos.mutableSet(mouse);
+                    }
+                } else {
+                    // Si l'entité glissée est une simple particule, on la déplace sur la souris
+                    draggedEntity.pos.mutableSet(mouse);
+                }
+            };
+
+            /**
+             * Fonction principale de dessin, appelée à chaque frame.
+             */
+            function draw() {
+                // Efface tout le canvas
+                ctx.clearRect(0, 0, width, height);
+
+                // Dessine toutes les entités de la simulation
+                for (const c of sim.composites) {
+                    // Dessine les contraintes (lignes, etc.)
+                    for (const constraint of c.constraints) {
+                        if (typeof (constraint).draw === 'function') {
+                            (constraint).draw(ctx);
+                        }
+                    }
+                    // Dessine les particules (points)
+                    for (const p of c.particles) {
+                        ctx.beginPath();
+                        ctx.arc(p.pos.x, p.pos.y, p.style?.radius || 2, 0, 2 * Math.PI);
+                        ctx.fillStyle = p.style?.color || "#2dad8f";
+                        ctx.fill();
+                    }
+                }
+
+                // Met en évidence l'entité la plus proche de la souris pour un retour visuel
+                const nearest = draggedEntity || nearestEntity();
+                if (nearest) {
+                    ctx.beginPath();
+                    ctx.arc(nearest.pos.x, nearest.pos.y, 8, 0, 2 * Math.PI);
+                    ctx.strokeStyle = highlightColor;
+                    ctx.stroke();
+                }
+            }
+
+            let lastTimestamp = 0;
+            function loop(currentTimestamp) {
+                const deltaTime = (currentTimestamp - lastTimestamp) / 1000; // Convert to seconds
+                lastTimestamp = currentTimestamp;
+
+                sim.frame(deltaTime);
+                draw();
+                requestAnimationFrame(loop);
+            };
+
+
+            loop();
+        }
+
+    </script>
+</body>
+
+</html>
