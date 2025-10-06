@@ -61,10 +61,20 @@ export class DistanceConstraint {
 	 */
 	relax(stepCoef: number) {
 		const normal = this.a.pos.sub(this.b.pos);
-		const m = normal.length2();
-		normal.mutableScale(((this.distance * this.distance - m) / m) * this.stiffness * stepCoef);
-		this.a.pos.mutableAdd(normal);
-		this.b.pos.mutableSub(normal);
+		const m = normal.length();
+		if (m === 0) return;
+
+		const im1 = this.a.mass > 0 ? 1 / this.a.mass : 0;
+		const im2 = this.b.mass > 0 ? 1 / this.b.mass : 0;
+		const im_total = im1 + im2;
+
+		if (im_total === 0) return;
+
+		const diff = (m - this.distance) / m * this.stiffness * stepCoef;
+		const correction = normal.scale(diff);
+
+		this.a.pos.mutableSub(correction.scale(im1 / im_total));
+		this.b.pos.mutableAdd(correction.scale(im2 / im_total));
 	}
 
 	/**
@@ -117,10 +127,17 @@ export class CollisionConstraint {
 		const minDistance = r1 + r2;
 
 		if (m < minDistance) {
+			const im1 = this.a.mass > 0 ? 1 / this.a.mass : 0;
+			const im2 = this.b.mass > 0 ? 1 / this.b.mass : 0;
+			const im_total = im1 + im2;
+
+			if (im_total === 0) return;
+
 			const diff = (minDistance - m) / m;
-			normal.mutableScale(diff * this.stiffness * stepCoef);
-			this.a.pos.mutableAdd(normal);
-			this.b.pos.mutableSub(normal);
+			const correction = normal.scale(diff * this.stiffness * stepCoef);
+
+			this.a.pos.mutableAdd(correction.scale(im1 / im_total));
+			this.b.pos.mutableSub(correction.scale(im2 / im_total));
 		}
 	}
 
@@ -299,9 +316,16 @@ export class MinMaxDistanceConstraint {
 			return;
 		}
 
-		normal.mutableScale(diff * this.stiffness * stepCoef);
-		this.a.pos.mutableAdd(normal);
-		this.b.pos.mutableSub(normal);
+		const im1 = this.a.mass > 0 ? 1 / this.a.mass : 0;
+		const im2 = this.b.mass > 0 ? 1 / this.b.mass : 0;
+		const im_total = im1 + im2;
+
+		if (im_total === 0) return;
+
+		const correction = normal.scale(diff * this.stiffness * stepCoef);
+
+		this.a.pos.mutableAdd(correction.scale(im1 / im_total));
+		this.b.pos.mutableSub(correction.scale(im2 / im_total));
 	}
 
 	/**
