@@ -60,3 +60,4 @@ Pour mieux illustrer les capacités du moteur, de nouvelles fonctions "fabriques
     - Indépendance totale du framerate d'affichage.
     - Valeurs de gravité et de frottement intuitives (car elles sont appliquées par étape fixe).
 - **Option client :** Le client pourrait choisir d'activer (`fixedTimeStep = 1/60`) ou de désactiver (`fixedTimeStep = null`) le pas de temps fixe via les options du constructeur de `VerletJS`.
+- Finaliser le Moteur : On pourrait s'occuper de la dernière contrainte, AngleConstraint, pour qu'elle aussi prenne en compte la masse. C'est la dernière pièce du puzzle pour que tout le moteur soit cohérent.

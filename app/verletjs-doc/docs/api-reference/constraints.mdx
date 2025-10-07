@@ -1,0 +1,132 @@
+---
+sidebar_position: 4
+---
+
+# Constraints
+
+Constraints are rules that define the relationships between particles. They are the core mechanism for building structures like ropes, cloth, and rigid bodies. All constraints are added to the `constraints` array of a `Composite`.
+
+---
+
+## DistanceConstraint
+
+Forces two particles to maintain a specific distance from each other. This is the most common constraint, used for creating links, sticks, and the edges of shapes.
+
+### Constructor
+
+#### `new DistanceConstraint(a, b, stiffness, [distance])`
+
+- `a` ([`Particle`](/docs/api-reference/particle)): The first particle.
+- `b` ([`Particle`](/docs/api-reference/particle)): The second particle.
+- `stiffness` (number): A value from `0.0` to `1.0` that defines how rigid the constraint is.
+- `distance` (number, optional): The distance to maintain. If not provided, the initial distance between the particles is used.
+
+### Example
+
+```javascript
+const p1 = new Particle(new Vec2(100, 100));
+const p2 = new Particle(new Vec2(200, 100));
+
+// Keep p1 and p2 100px apart with medium stiffness
+const constraint = new DistanceConstraint(p1, p2, 0.5, 100);
+```
+
+---
+
+## PinConstraint
+
+Fixes a particle to a specific point in space, making it immovable. This is useful for creating anchor points or pivots.
+
+### Constructor
+
+#### `new PinConstraint(a, pos)`
+
+- `a` ([`Particle`](/docs/api-reference/particle)): The particle to pin.
+- `pos` ([`Vec2`](/docs/api-reference/vec2)): The position to pin the particle to.
+
+### Example
+
+```javascript
+const p1 = new Particle(new Vec2(250, 100));
+
+// Pin p1 to its current location
+const pin = new PinConstraint(p1, p1.pos);
+```
+
+---
+
+## AngleConstraint
+
+Maintains a specific angle between three particles. It's essential for creating rigid corners or flexible joints.
+
+### Constructor
+
+#### `new AngleConstraint(a, b, c, stiffness)`
+
+- `a` ([`Particle`](/docs/api-reference/particle)): The first particle of the angle.
+- `b` ([`Particle`](/docs/api-reference/particle)): The center particle (the vertex of the angle).
+- `c` ([`Particle`](/docs/api-reference/particle)): The third particle of the angle.
+- `stiffness` (number): The rigidity of the constraint.
+
+### Example
+
+```javascript
+const p1 = new Particle(new Vec2(100, 100));
+const p2 = new Particle(new Vec2(200, 100)); // Vertex
+const p3 = new Particle(new Vec2(200, 200));
+
+// Maintain the initial 90-degree angle
+const angle = new AngleConstraint(p1, p2, p3, 0.1);
+```
+
+---
+
+## CollisionConstraint
+
+Prevents two particles from overlapping. The collision is based on the `radius` property defined in each particle's `style`.
+
+### Constructor
+
+#### `new CollisionConstraint(a, b, stiffness)`
+
+- `a` ([`Particle`](/docs/api-reference/particle)): The first particle.
+- `b` ([`Particle`](/docs/api-reference/particle)): The second particle.
+- `stiffness` (number): The rigidity of the collision response.
+
+### Example
+
+```javascript
+const p1 = new Particle(new Vec2(240, 100));
+p1.style = { radius: 20 };
+
+const p2 = new Particle(new Vec2(260, 100));
+p2.style = { radius: 20 };
+
+const collision = new CollisionConstraint(p1, p2, 1);
+```
+
+---
+
+## MinMaxDistanceConstraint
+
+A variation of `DistanceConstraint` that keeps the distance between two particles within a minimum and maximum range.
+
+### Constructor
+
+#### `new MinMaxDistanceConstraint(a, b, minDistance, maxDistance, stiffness)`
+
+- `a` ([`Particle`](/docs/api-reference/particle)): The first particle.
+- `b` ([`Particle`](/docs/api-reference/particle)): The second particle.
+- `minDistance` (number): The minimum allowed distance.
+- `maxDistance` (number): The maximum allowed distance.
+- `stiffness` (number): The rigidity of the constraint.
+
+### Example
+
+```javascript
+const p1 = new Particle(new Vec2(200, 100));
+const p2 = new Particle(new Vec2(300, 100));
+
+// Keep the distance between 50px and 150px
+const minMax = new MinMaxDistanceConstraint(p1, p2, 50, 150, 1);
+```

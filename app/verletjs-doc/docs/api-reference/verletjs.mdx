@@ -1,0 +1,112 @@
+---
+sidebar_position: 3
+---
+
+# VerletJS
+
+This is the main class for the physics simulation. It manages the simulation world, its properties, and all the objects within it.
+
+## Constructor
+
+### `new VerletJS(width, height, [options])`
+
+Creates a new physics simulation world.
+
+#### Parameters
+
+- `width` (number): The width of the simulation world.
+- `height` (number): The height of the simulation world.
+- `options` (object, optional): An object to configure the simulation.
+  - `gravity` ([`Vec2`](/docs/api-reference/vec2), optional): Global gravity vector. Defaults to `new Vec2(0, 0.2)`.
+  - `friction` (number, optional): Friction factor. Defaults to `0.99`.
+  - `groundFriction` (number, optional): Ground friction factor. Defaults to `0.8`.
+  - `solverIterations` (number, optional): Number of iterations for the constraint solver. Defaults to `8`.
+  - `restitution` (number, optional): Coefficient of restitution for boundary collisions. Defaults to `0.2`.
+
+#### Example
+
+```javascript
+import { VerletJS } from 'verlet-engine';
+
+const sim = new VerletJS(800, 600, { gravity: new Vec2(0, 0.5) });
+```
+
+---
+
+## Properties
+
+### `width` / `height`
+
+- **Type:** `number`
+
+The dimensions of the simulation world. Particles are constrained within these boundaries.
+
+---
+
+### `gravity`
+
+- **Type:** [`Vec2`](/docs/api-reference/vec2)
+
+A vector that is applied to all particles in each frame, simulating the force of gravity.
+
+---
+
+### `friction`
+
+- **Type:** `number`
+
+The amount of velocity that particles lose in each frame, simulating air resistance. A value of `1.0` means no friction.
+
+---
+
+### `groundFriction`
+
+- **Type:** `number`
+
+The friction applied to particles when they are on the "ground" (i.e., at the bottom boundary of the world).
+
+---
+
+### `restitution`
+
+- **Type:** `number`
+
+The "bounciness" of particles when they collide with the world boundaries. A value of `0` means no bounce, while `1` means a perfectly elastic bounce.
+
+---
+
+### `solverIterations`
+
+- **Type:** `number`
+
+The number of times constraints are relaxed (solved) per frame. Higher values lead to more rigid and stable structures but are more computationally expensive.
+
+---
+
+### `composites`
+
+- **Type:** `Composite[]`
+
+An array containing all the `Composite` objects in the simulation. You can add or remove objects from this array to dynamically change the simulation.
+
+---
+
+## Methods
+
+### `frame(deltaTime)`
+
+Advances the simulation by one time step. This is the core method that you should call in your animation loop.
+
+#### Parameters
+
+- `deltaTime` (number): The time elapsed since the last frame. This value is used to ensure the simulation runs consistently regardless of the frame rate (although the current implementation has a fixed time step).
+
+#### Example
+
+```javascript
+function animate() {
+  sim.frame(16); // Advance simulation
+  // ... render ...
+  requestAnimationFrame(animate);
+}
+```

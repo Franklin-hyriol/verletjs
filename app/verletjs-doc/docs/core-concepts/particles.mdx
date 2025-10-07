@@ -12,7 +12,7 @@ A particle is essentially a point in space that has a few basic properties:
 - A **current position** (`pos`)
 - An **old position** (`oldpos`)
 - An **acceleration** (`acc`)
-- A **mass**
+- A **mass** (`mass`)
 
 You might notice that there is no `velocity` property. This is the key characteristic of Verlet integration. A particle's velocity is implicitly calculated by comparing its current position to its old position. This makes the simulation very stable.
 
@@ -53,10 +53,17 @@ import TabItem from '@theme/TabItem';
   const sim = new VerletJS(500, 500);
 
   // This creates a particle at position (100, 100)
+  // You can also specify mass and other properties if needed
   const particle = new Particle(new Vec2(100, 100));
 
   // Don't forget to add it to the simulation
   sim.composites.push({ particles: [particle], constraints: [] });
+  
+  /*
+
+  // The rest of your code to start the simulation
+  
+  */
   ```
 
   </TabItem>

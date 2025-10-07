@@ -1,0 +1,82 @@
+---
+sidebar_position: 4
+---
+
+# The Simulation
+
+The `VerletJS` class is the heart of the physics engine. It manages all the particles, constraints, and composites, and it's responsible for stepping the simulation forward in time.
+
+## Creating a Simulation
+
+To get started, you need to create an instance of the `VerletJS` class. You must provide the dimensions (width and height) of the simulation world.
+
+```javascript
+import { VerletJS } from 'verlet-engine';
+
+// Create a simulation world of 500x500 pixels
+const sim = new VerletJS(500, 500);
+```
+
+### Configuration Options
+
+You can customize the behavior of the simulation by passing an options object as the third argument to the constructor.
+
+```javascript
+import { VerletJS, Vec2 } from 'verlet-engine';
+
+const options = {
+  gravity: new Vec2(0, 0.5), // A stronger gravity
+  friction: 0.98,           // A little more friction
+  restitution: 0.5,         // More bounciness
+  solverIterations: 15,     // Higher precision for constraints
+};
+
+const sim = new VerletJS(500, 500, options);
+```
+
+Here are the available options:
+
+- `gravity` (Vec2): A vector representing the global gravity. Default is `new Vec2(0, 0.2)`.
+- `friction` (number): The air friction applied to all particles. A value of `1.0` means no friction. Default is `0.99`.
+- `groundFriction` (number): The friction applied when a particle is on the ground. Default is `0.8`.
+- `restitution` (number): The "bounciness" of particles when they hit the boundaries. A value of `1.0` means a perfectly elastic collision. Default is `0.2`.
+- `solverIterations` (number): The number of times the constraint solver runs per frame. More iterations lead to more stable simulations but require more processing power. Default is `8`.
+
+## Updating the Simulation
+
+The simulation does not run on its own. You need to tell it when to advance. This is typically done in a `requestAnimationFrame` loop.
+
+The `frame(deltaTime)` method advances the simulation by a given time step.
+
+```javascript
+function animate() {
+  // Update the simulation
+  sim.frame(16); // Assuming a 60 FPS rate (1000ms / 60fps ≈ 16ms)
+
+  // Render the simulation (see the Rendering page)
+  // ...
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+```
+
+## Adding Objects
+
+You don't add particles or constraints directly to the simulation. Instead, you add `Composite` objects. The `VerletJS` instance has a `composites` array that holds all the objects in the simulation.
+
+```javascript
+import { VerletJS, Vec2, Composite, Particle } from 'verlet-engine';
+
+const sim = new VerletJS(500, 500);
+
+// Create a composite
+const myObject = new Composite();
+myObject.particles.push(new Particle(new Vec2(100, 100)));
+
+// Add it to the simulation
+sim.composites.push(myObject);
+```
+
+The helper functions discussed in the **Composites** section automatically add the created composite to the simulation.
