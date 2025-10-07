@@ -1,32 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Verlet Spider - Animated</title>
+  <title>Verlet Spider - MinMaxAngleConstraint</title>
   <style>
     body { margin: 0; overflow: hidden; background-color: #222; }
-    canvas { display: block; cursor: none; }
+    canvas { display: block; background-color: #222;}
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
   <script type="module">
-    import { VerletJS, Particle, DistanceConstraint, AngleConstraint, Composite, Vec2, rotateComposite } from '../../dist/verlet-engine.es.js';
+    import { VerletJS, Particle, DistanceConstraint, AngleConstraint, MinMaxAngleConstraint, PinConstraint, Composite, Vec2 } from '../../dist/verlet-engine.es.js';
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // --- Simulation Setup ---
     const sim = new VerletJS(canvas.width, canvas.height);
     sim.gravity = new Vec2(0, 0);
     sim.friction = 0.98;
 
-    // (The createSpider function is exactly the same as before)
+    // --- Spider Factory with MinMaxAngleConstraint ---
     function createSpider(origin) {
       const composite = new Composite();
       const legStiffness = 0.99;
       const bodyStiffness = 1;
-      const angleStiffness = 0.9;
+      const angleStiffness = 1;
 
       composite.thorax = new Particle(origin);
       composite.head = new Particle(origin.add(new Vec2(0, -5)));
@@ -34,7 +35,7 @@
       composite.particles.push(composite.thorax, composite.head, composite.abdomen);
       composite.constraints.push(new DistanceConstraint(composite.head, composite.thorax, bodyStiffness));
       composite.constraints.push(new DistanceConstraint(composite.abdomen, composite.thorax, bodyStiffness));
-      composite.constraints.push(new AngleConstraint(composite.abdomen, composite.thorax, composite.head, 0.1));
+      composite.constraints.push(new AngleConstraint(composite.abdomen, composite.thorax, composite.head, 0.4));
 
       for (let i = 0; i < 4; ++i) {
         const lenCoef = (i === 1 || i === 2) ? 0.8 : 1;
@@ -47,6 +48,7 @@
         const foot_l = new Particle(leg3_l.pos.add(new Vec2(-20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
         const foot_r = new Particle(leg3_r.pos.add(new Vec2(20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
         composite.particles.push(leg1_l, leg1_r, leg2_l, leg2_r, leg3_l, leg3_r, foot_l, foot_r);
+
         composite.constraints.push(new DistanceConstraint(leg1_l, composite.thorax, legStiffness));
         composite.constraints.push(new DistanceConstraint(leg1_r, composite.thorax, legStiffness));
         composite.constraints.push(new DistanceConstraint(leg2_l, leg1_l, legStiffness));
@@ -55,12 +57,19 @@
         composite.constraints.push(new DistanceConstraint(leg3_r, leg2_r, legStiffness));
         composite.constraints.push(new DistanceConstraint(foot_l, leg3_l, legStiffness));
         composite.constraints.push(new DistanceConstraint(foot_r, leg3_r, legStiffness));
-        composite.constraints.push(new AngleConstraint(composite.thorax, leg1_l, leg2_l, angleStiffness));
-        composite.constraints.push(new AngleConstraint(composite.thorax, leg1_r, leg2_r, angleStiffness));
-        composite.constraints.push(new AngleConstraint(leg1_l, leg2_l, leg3_l, angleStiffness));
-        composite.constraints.push(new AngleConstraint(leg1_r, leg2_r, leg3_r, angleStiffness));
-        composite.constraints.push(new AngleConstraint(leg2_l, leg3_l, foot_l, angleStiffness));
-        composite.constraints.push(new AngleConstraint(leg2_r, leg3_r, foot_r, angleStiffness));
+
+        const range = 25 * (Math.PI / 180);
+        const addMinMaxAngle = (pA, pB, pC) => {
+          const initialAngle = pB.pos.angle2(pA.pos, pC.pos);
+          composite.constraints.push(new MinMaxAngleConstraint(pA, pB, pC, initialAngle - range, initialAngle + range, angleStiffness));
+        };
+
+        addMinMaxAngle(composite.thorax, leg1_l, leg2_l);
+        addMinMaxAngle(composite.thorax, leg1_r, leg2_r);
+        addMinMaxAngle(leg1_l, leg2_l, leg3_l);
+        addMinMaxAngle(leg1_r, leg2_r, leg3_r);
+        addMinMaxAngle(leg2_l, leg3_l, foot_l);
+        addMinMaxAngle(leg2_r, leg3_r, foot_r);
       }
       return composite;
     }
@@ -68,74 +77,40 @@
     const spiderComposite = createSpider(new Vec2(canvas.width / 2, canvas.height / 2));
     sim.composites.push(spiderComposite);
 
-    // --- Animation & Movement ---
-    // Initialize the target to the spider's head position to prevent initial rotation
-    const spiderTarget = new Vec2().mutableSet(spiderComposite.head.pos);
-    const mousePos = new Vec2(canvas.width / 2, canvas.height / 2);
 
-    canvas.addEventListener('mousemove', (e) => {
-      mousePos.x = e.clientX;
-      mousePos.y = e.clientY;
-    });
 
-    canvas.addEventListener('mousedown', (e) => {
-      spiderTarget.x = e.clientX;
-      spiderTarget.y = e.clientY;
-    });
-
+    // --- Animation Loop ---
     function animate() {
-      const spiderBody = spiderComposite.thorax;
-      const spiderHead = spiderComposite.head;
-      const spiderAbdomen = spiderComposite.abdomen;
-
-      // --- Rotation Logic ---
-      const bodyAxis = spiderHead.pos.sub(spiderAbdomen.pos);
-      const targetDirection = spiderTarget.sub(spiderBody.pos);
-
-      const currentAngle = Math.atan2(bodyAxis.y, bodyAxis.x);
-      const targetAngle = Math.atan2(targetDirection.y, targetDirection.x);
-
-      let angleDifference = targetAngle - currentAngle;
-      while (angleDifference > Math.PI) angleDifference -= 2 * Math.PI;
-      while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
-
-      // Rotate if not aligned
-      if (Math.abs(angleDifference) > 0.05) {
-        const maxRotationSpeed = 0.05; // radians per frame
-        const rotationThisFrame = Math.max(-maxRotationSpeed, Math.min(maxRotationSpeed, angleDifference));
-        rotateComposite(spiderComposite, spiderBody.pos, rotationThisFrame);
-      }
-      
-      // --- Physics and Drawing ---
       sim.frame(16);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw spider
-      ctx.strokeStyle = '#eee';
+      ctx.strokeStyle = '#999';
       ctx.lineWidth = 1.5;
+
       for (const c of sim.composites) {
+        // Draw only the "bones" of the spider for a cleaner look
         for (const constraint of c.constraints) {
-          if (constraint instanceof DistanceConstraint) {
-            ctx.beginPath();
-            ctx.moveTo(constraint.a.pos.x, constraint.a.pos.y);
-            ctx.lineTo(constraint.b.pos.x, constraint.b.pos.y);
-            ctx.stroke();
-          }
+            if (constraint instanceof DistanceConstraint) {
+                constraint.draw(ctx);
+            }
         }
+        
+        // Draw body parts
         ctx.fillStyle = '#eee';
-        ctx.beginPath(); ctx.arc(c.head.pos.x, c.head.pos.y, 4, 0, 2 * Math.PI); ctx.fill();
-        ctx.beginPath(); ctx.arc(c.thorax.pos.x, c.thorax.pos.y, 4, 0, 2 * Math.PI); ctx.fill();
-        ctx.beginPath(); ctx.arc(c.abdomen.pos.x, c.abdomen.pos.y, 8, 0, 2 * Math.PI); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(c.head.pos.x, c.head.pos.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(c.thorax.pos.x, c.thorax.pos.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(c.abdomen.pos.x, c.abdomen.pos.y, 8, 0, 2 * Math.PI);
+        ctx.fill();
       }
 
-      // Draw mouse position indicator
-      ctx.beginPath();
-      ctx.arc(mousePos.x, mousePos.y, 5, 0, 2 * Math.PI);
-      ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-      ctx.fill();
-
       requestAnimationFrame(animate);
-
     }
 
     animate();

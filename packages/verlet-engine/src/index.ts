@@ -10,5 +10,8 @@ export { Vec2 } from './lib/vec2';
 // Types
 export * from './lib/types';
 
+// Rotation
+export * from './lib/rotation';
+
 // Monkey-patched methods for creating objects
 export * from './lib/objects';
