@@ -327,6 +327,74 @@ export class MinMaxDistanceConstraint {
 		this.a.pos.mutableAdd(correction.scale(im1 / im_total));
 		this.b.pos.mutableSub(correction.scale(im2 / im_total));
 	}
+}
+
+
+/**
+ * Constrains the angle between three particles to a specific range.
+ */
+export class MinMaxAngleConstraint {
+	/** The first particle of the angle. */
+	a: Particle;
+	/** The center particle (the vertex of the angle). */
+	b: Particle;
+	/** The third particle of the angle. */
+	c: Particle;
+	/** The minimum angle to be maintained (in radians). */
+	minAngle: number;
+	/** The maximum angle to be maintained (in radians). */
+	maxAngle: number;
+	/** The stiffness of the constraint (a value from 0.0 to 1.0). */
+	stiffness: number;
+	/** Optional style for rendering */
+	style?: ConstraintStyle;
+
+	/**
+	 * @param a The first particle.
+	 * @param b The center particle (the vertex of the angle).
+	 * @param c The third particle.
+	 * @param minAngle The minimum angle in radians.
+	 * @param maxAngle The maximum angle in radians.
+	 * @param stiffness A value from 0.0 to 1.0.
+	 */
+	constructor(a: Particle, b: Particle, c: Particle, minAngle: number, maxAngle: number, stiffness: number) {
+		this.a = a;
+		this.b = b;
+		this.c = c;
+		this.minAngle = minAngle;
+		this.maxAngle = maxAngle;
+		this.stiffness = stiffness;
+	}
+
+	/**
+	 * Relaxes the constraint by rotating the particles to satisfy the angle limits.
+	 * @param stepCoef A coefficient for the relaxation step.
+	 */
+	relax(stepCoef: number) {
+		let angle = this.b.pos.angle2(this.a.pos, this.c.pos);
+		let diff = 0;
+
+		if (angle < this.minAngle) {
+			diff = angle - this.minAngle;
+		} else if (angle > this.maxAngle) {
+			diff = angle - this.maxAngle;
+		} else {
+			return; // Angle is within the allowed range
+		}
+
+		// Normalize the difference
+		if (diff <= -Math.PI)
+			diff += 2 * Math.PI;
+		else if (diff >= Math.PI)
+			diff -= 2 * Math.PI;
+
+		diff *= stepCoef * this.stiffness;
+
+		this.a.pos = this.a.pos.rotate(this.b.pos, diff);
+		this.c.pos = this.c.pos.rotate(this.b.pos, -diff);
+		this.b.pos = this.b.pos.rotate(this.a.pos, diff);
+		this.b.pos = this.b.pos.rotate(this.c.pos, -diff);
+	}
 
 	/**
 	 * Draws the constraint on a 2D canvas context.
@@ -336,8 +404,11 @@ export class MinMaxDistanceConstraint {
 		ctx.beginPath();
 		ctx.moveTo(this.a.pos.x, this.a.pos.y);
 		ctx.lineTo(this.b.pos.x, this.b.pos.y);
-		ctx.strokeStyle = this.style?.color || '#d8dde2';
-		ctx.lineWidth = this.style?.lineWidth || 1;
+		ctx.lineTo(this.c.pos.x, this.c.pos.y);
+		const tmp = ctx.lineWidth;
+		ctx.lineWidth = this.style?.lineWidth || 5;
+		ctx.strokeStyle = this.style?.color || "rgba(255,165,0,0.2)";
 		ctx.stroke();
+		ctx.lineWidth = tmp;
 	}
 }

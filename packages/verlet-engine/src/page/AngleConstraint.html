@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AngleConstraint Explained</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; text-align: center; background-color: #f0f0f0; }
+    canvas { background-color: #fff; }
+  </style>
+</head>
+<body>
+  <h2>AngleConstraint Example</h2>
+  <p>Drag points A or C. The constraint will try to keep the angle at point B constant.</p>
+  <canvas id="canvas"></canvas>
+  <script type="module">
+    import { VerletJS, Particle, DistanceConstraint, AngleConstraint, PinConstraint, Composite, Vec2 } from '../../dist/verlet-engine.es.js';
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 600;
+    canvas.height = 400;
+
+    // --- Simulation Setup ---
+    const sim = new VerletJS(canvas.width, canvas.height);
+    sim.gravity = new Vec2(0, 0); // No gravity for clarity
+
+    // --- The 3 Particles ---
+    const composite = new Composite();
+    
+    // A: The first point of the angle
+    const pA = new Particle(new Vec2(200, 200));
+    
+    // B: The vertex (the corner) of the angle
+    const pB = new Particle(new Vec2(300, 200));
+
+    // C: The third point of the angle
+    const pC = new Particle(new Vec2(300, 300));
+
+    composite.particles.push(pA, pB, pC);
+
+    // --- The Constraints ---
+
+    // 1. Add distance constraints to form a basic shape (like a bent arm)
+    // This is not strictly necessary for AngleConstraint, but it makes the example clearer.
+    composite.constraints.push(new DistanceConstraint(pA, pB, 1));
+    composite.constraints.push(new DistanceConstraint(pB, pC, 1));
+
+    // 2. The Angle Constraint
+    // This is the key part. It tells the simulation:
+    // "The angle formed by A-B-C must be preserved."
+    // The angle is calculated from the initial positions of the particles.
+    const angleConstraint = new AngleConstraint(pA, pB, pC, 1);
+    composite.constraints.push(angleConstraint);
+
+    sim.composites.push(composite);
+
+
+    // --- Mouse Interaction ---
+    let draggedParticle = null;
+    let pinConstraint = null;
+
+    function getNearestParticle(pos, maxRadius = 20) {
+      let nearest = null;
+      let minDist2 = maxRadius * maxRadius;
+
+      for (const c of sim.composites) {
+        for (const p of c.particles) {
+          const dist2 = p.pos.dist2(pos);
+          if (dist2 < minDist2) {
+            minDist2 = dist2;
+            nearest = p;
+          }
+        }
+      }
+      return nearest;
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      const mousePos = new Vec2(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+      draggedParticle = getNearestParticle(mousePos, 20);
+      
+      if (draggedParticle) {
+        // Pin the particle to the mouse position
+        pinConstraint = new PinConstraint(draggedParticle, mousePos);
+        // Add the pin constraint to the composite that the particle belongs to
+        for (const c of sim.composites) {
+            if (c.particles.includes(draggedParticle)) {
+                c.constraints.push(pinConstraint);
+                break;
+            }
+        }
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (draggedParticle && pinConstraint) {
+        pinConstraint.pos.x = e.clientX - canvas.offsetLeft;
+        pinConstraint.pos.y = e.clientY - canvas.offsetTop;
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      if (draggedParticle && pinConstraint) {
+        // Remove the pin constraint
+        for (const c of sim.composites) {
+            const index = c.constraints.indexOf(pinConstraint);
+            if (index > -1) {
+                c.constraints.splice(index, 1);
+                break;
+            }
+        }
+        draggedParticle = null;
+        pinConstraint = null;
+      }
+    });
+
+
+
+    // --- Animation Loop ---
+    function animate() {
+      sim.frame(16);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw constraints
+      for (const c of sim.composites[0].constraints) {
+        c.style = { color: '#888', lineWidth: 2 };
+        c.draw(ctx);
+      }
+
+      // Draw particles and labels
+      ctx.font = "16px Arial";
+      ctx.fillStyle = "black";
+      
+      ctx.fillText("A", pA.pos.x - 20, pA.pos.y + 5);
+      ctx.beginPath();
+      ctx.arc(pA.pos.x, pA.pos.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = "#ff6347"; // Red
+      ctx.fill();
+
+      ctx.fillText("B (The Vertex)", pB.pos.x + 10, pB.pos.y - 10);
+      ctx.beginPath();
+      ctx.arc(pB.pos.x, pB.pos.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = "#4682b4"; // Blue
+      ctx.fill();
+
+      ctx.fillText("C", pC.pos.x + 10, pC.pos.y + 5);
+      ctx.beginPath();
+      ctx.arc(pC.pos.x, pC.pos.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = "#32cd32"; // Green
+      ctx.fill();
+      
+      // Display the current angle
+      const currentAngle = pB.pos.angle2(pA.pos, pC.pos) * (180 / Math.PI); // in degrees
+      ctx.fillStyle = "black";
+      ctx.fillText(`Current Angle at B: ${currentAngle.toFixed(1)}°`, 20, 30);
+      ctx.fillText(`Target Angle: 90.0°`, 20, 50);
+
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
