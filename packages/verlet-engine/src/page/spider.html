@@ -36,6 +36,8 @@
       composite.constraints.push(new DistanceConstraint(composite.abdomen, composite.thorax, bodyStiffness));
       composite.constraints.push(new AngleConstraint(composite.abdomen, composite.thorax, composite.head, 0.1));
 
+      composite.feet = [];
+
       for (let i = 0; i < 4; ++i) {
         const lenCoef = (i === 1 || i === 2) ? 0.8 : 1;
         const leg1_l = new Particle(composite.thorax.pos.add(new Vec2(-3, (i - 1.5) * 3)));
@@ -47,6 +49,8 @@
         const foot_l = new Particle(leg3_l.pos.add(new Vec2(-20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
         const foot_r = new Particle(leg3_r.pos.add(new Vec2(20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
         composite.particles.push(leg1_l, leg1_r, leg2_l, leg2_r, leg3_l, leg3_r, foot_l, foot_r);
+        composite.feet.push(foot_l, foot_r);
+
         composite.constraints.push(new DistanceConstraint(leg1_l, composite.thorax, legStiffness));
         composite.constraints.push(new DistanceConstraint(leg1_r, composite.thorax, legStiffness));
         composite.constraints.push(new DistanceConstraint(leg2_l, leg1_l, legStiffness));
@@ -69,9 +73,13 @@
     sim.composites.push(spiderComposite);
 
     // --- Animation & Movement ---
-    // Initialize the target to the spider's head position to prevent initial rotation
     const spiderTarget = new Vec2().mutableSet(spiderComposite.head.pos);
     const mousePos = new Vec2(canvas.width / 2, canvas.height / 2);
+    let stepCounter = 0;
+    const stepDuration = 25; // frames for one step cycle
+
+    // Define the resting positions of the feet relative to the body's center (thorax)
+    const feetRestingOffsets = spiderComposite.feet.map(f => f.pos.sub(spiderComposite.thorax.pos));
 
     canvas.addEventListener('mousemove', (e) => {
       mousePos.x = e.clientX;
@@ -91,6 +99,7 @@
       // --- Rotation Logic ---
       const bodyAxis = spiderHead.pos.sub(spiderAbdomen.pos);
       const targetDirection = spiderTarget.sub(spiderBody.pos);
+      const distanceToTarget = targetDirection.length();
 
       const currentAngle = Math.atan2(bodyAxis.y, bodyAxis.x);
       const targetAngle = Math.atan2(targetDirection.y, targetDirection.x);
@@ -99,11 +108,40 @@
       while (angleDifference > Math.PI) angleDifference -= 2 * Math.PI;
       while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
 
-      // Rotate if not aligned
       if (Math.abs(angleDifference) > 0.05) {
-        const maxRotationSpeed = 0.05; // radians per frame
+        const maxRotationSpeed = 0.05;
         const rotationThisFrame = Math.max(-maxRotationSpeed, Math.min(maxRotationSpeed, angleDifference));
         rotateComposite(spiderComposite, spiderBody.pos, rotationThisFrame);
+      }
+
+      // --- Walking Logic ---
+      if (Math.abs(angleDifference) < 0.5 && distanceToTarget > 20) {
+        const stepPhase = Math.floor((stepCounter / stepDuration)) % 2;
+        const maxSpeed = 0.8;
+        const moveDirection = targetDirection.normal();
+
+        // Move the body forward
+        spiderBody.pos.mutableAdd(moveDirection.scale(maxSpeed));
+
+        // Animate the feet
+        spiderComposite.feet.forEach((foot, i) => {
+          const isSteppingGroup = (i % 4) < 2; // Simple grouping: 0,1, 4,5 vs 2,3, 6,7
+          
+          if ((stepPhase === 0 && isSteppingGroup) || (stepPhase === 1 && !isSteppingGroup)) {
+            // This foot should be stepping
+            const restingOffset = feetRestingOffsets[i].rotate(new Vec2(0,0), currentAngle);
+            const stepTarget = spiderBody.pos.add(restingOffset).add(moveDirection.scale(20)); // Step forward
+            
+            const toTarget = stepTarget.sub(foot.pos);
+            const delta = toTarget.scale(0.2);
+            foot.pos.mutableAdd(delta);
+            foot.lastPos.mutableAdd(delta); // Apply same delta to lastPos to maintain velocity
+          }
+        });
+
+        stepCounter++;
+      } else {
+        stepCounter = 0; // Reset step cycle when not walking
       }
       
       // --- Physics and Drawing ---
@@ -135,7 +173,6 @@
       ctx.fill();
 
       requestAnimationFrame(animate);
-
     }
 
     animate();

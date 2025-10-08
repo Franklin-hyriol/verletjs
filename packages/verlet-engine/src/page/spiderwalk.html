@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Verlet Spider on Web</title>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #222; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script type="module">
+    import { VerletJS, Particle, DistanceConstraint, AngleConstraint, Composite, Vec2, PinConstraint } from '../../dist/verlet-engine.es.js';
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const sim = new VerletJS(canvas.width, canvas.height, { gravity: new Vec2(0, 0), friction: 0.9, groundFriction: 0.7, solverIterations: 10, restitution: 0.5 });
+
+    // Function to create the spider web
+    function createWeb() {
+      const webComposite = new Composite();
+      const stiffness = 0.03;
+      const tensor = 0.3;
+
+      const origin = new Vec2(canvas.width / 2, canvas.height / 2); // Le centre de la toile
+      const maxOuterRadius = 300; // Rayon maximal de la toile
+      const numRadialSegments = 20; // Nombre de "rayons"
+      const numConcentricRings = 5; // Nombre d'anneaux concentriques
+
+      const angularStep = (2 * Math.PI) / numRadialSegments;
+      const totalParticles = numRadialSegments * numConcentricRings; // Nombre total de particules
+      const radiusDecrementPerParticle = maxOuterRadius / totalParticles; // De combien le rayon diminue par particule
+
+      for (let i = 0; i < totalParticles; ++i) {
+          const theta = i * angularStep + Math.cos(i * 0.4) * 0.05 + Math.cos(i * 0.05) * 0.2;
+          const shrinkingRadius = maxOuterRadius - radiusDecrementPerParticle * i + Math.cos(i * 0.1) * 20;
+
+          const verticalWaveOffset = Math.cos(theta * 2.1) * (maxOuterRadius / numConcentricRings) * 0.2;
+          webComposite.particles.push(new Particle(new Vec2(origin.x + Math.cos(theta) * shrinkingRadius, origin.y + Math.sin(theta) * shrinkingRadius + verticalWaveOffset)));
+      }
+
+      for (let i = 0; i < numRadialSegments; i += 4) {
+          webComposite.constraints.push(new PinConstraint(webComposite.particles[i], webComposite.particles[i].pos));
+      }
+
+      for (let i = 0; i < totalParticles - 1; ++i) {
+          webComposite.constraints.push(new DistanceConstraint(webComposite.particles[i], webComposite.particles[i + 1], stiffness));
+          const radialConnectionIndex = i + numRadialSegments;
+          if (radialConnectionIndex < totalParticles - 1) {
+              webComposite.constraints.push(new DistanceConstraint(webComposite.particles[i], webComposite.particles[radialConnectionIndex], stiffness));
+          } else {
+              webComposite.constraints.push(new DistanceConstraint(webComposite.particles[i], webComposite.particles[totalParticles - 1], stiffness));
+          }
+      }
+
+      webComposite.constraints.push(new DistanceConstraint(webComposite.particles[0], webComposite.particles[numRadialSegments - 1], stiffness));
+
+      for (const c of webComposite.constraints) {
+          if (c instanceof DistanceConstraint) {
+              c.distance *= tensor;
+          }
+      }
+
+      return webComposite;
+    }
+
+    // Function to create the spider
+    function createSpider(origin) {
+      const composite = new Composite();
+      const legStiffness = 0.9;
+      const bodyStiffness = 0.9;
+      const angleStiffness = 0.8;
+
+      composite.thorax = new Particle(origin);
+      composite.head = new Particle(origin.add(new Vec2(0, -5)));
+      composite.abdomen = new Particle(origin.add(new Vec2(0, 10)));
+      composite.particles.push(composite.thorax, composite.head, composite.abdomen);
+      composite.constraints.push(new DistanceConstraint(composite.head, composite.thorax, bodyStiffness));
+      composite.constraints.push(new DistanceConstraint(composite.abdomen, composite.thorax, bodyStiffness));
+      composite.constraints.push(new AngleConstraint(composite.abdomen, composite.thorax, composite.head, 0.4));
+
+      for (let i = 0; i < 4; ++i) {
+        const lenCoef = (i === 1 || i === 2) ? 0.8 : 1;
+        const leg1_l = new Particle(composite.thorax.pos.add(new Vec2(-3, (i - 1.5) * 3)));
+        const leg1_r = new Particle(composite.thorax.pos.add(new Vec2(3, (i - 1.5) * 3)));
+        const leg2_l = new Particle(leg1_l.pos.add(new Vec2(-20, (i - 1.5) * 30).normal().scale(20 * lenCoef)));
+        const leg2_r = new Particle(leg1_r.pos.add(new Vec2(20, (i - 1.5) * 30).normal().scale(20 * lenCoef)));
+        const leg3_l = new Particle(leg2_l.pos.add(new Vec2(-20, (i - 1.5) * 50).normal().scale(20 * lenCoef)));
+        const leg3_r = new Particle(leg2_r.pos.add(new Vec2(20, (i - 1.5) * 50).normal().scale(20 * lenCoef)));
+        const foot_l = new Particle(leg3_l.pos.add(new Vec2(-20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
+        const foot_r = new Particle(leg3_r.pos.add(new Vec2(20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
+        composite.particles.push(leg1_l, leg1_r, leg2_l, leg2_r, leg3_l, leg3_r, foot_l, foot_r);
+        composite.constraints.push(new DistanceConstraint(leg1_l, composite.thorax, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg1_r, composite.thorax, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg2_l, leg1_l, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg2_r, leg1_r, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg3_l, leg2_l, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg3_r, leg2_r, legStiffness));
+        composite.constraints.push(new DistanceConstraint(foot_l, leg3_l, legStiffness));
+        composite.constraints.push(new DistanceConstraint(foot_r, leg3_r, legStiffness));
+        composite.constraints.push(new AngleConstraint(composite.thorax, leg1_l, leg2_l, angleStiffness));
+        composite.constraints.push(new AngleConstraint(composite.thorax, leg1_r, leg2_r, angleStiffness));
+        composite.constraints.push(new AngleConstraint(leg1_l, leg2_l, leg3_l, angleStiffness));
+        composite.constraints.push(new AngleConstraint(leg1_r, leg2_r, leg3_r, angleStiffness));
+        composite.constraints.push(new AngleConstraint(leg2_l, leg3_l, foot_l, angleStiffness));
+        composite.constraints.push(new AngleConstraint(leg2_r, leg3_r, foot_r, angleStiffness));
+      }
+      return composite;
+    }
+
+    // Create and add the composites to the simulation
+    const web = createWeb();
+    sim.composites.push(web);
+
+    const spider = createSpider(new Vec2(canvas.width / 2, canvas.height / 2));
+    sim.composites.push(spider);
+
+    // Simple animation loop
+    function animate() {
+      sim.frame(16);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // 1. Draw Web
+      ctx.strokeStyle = '#eee';
+      ctx.lineWidth = 1;
+      for (const constraint of web.constraints) {
+        if (constraint instanceof DistanceConstraint) {
+          ctx.beginPath();
+          ctx.moveTo(constraint.a.pos.x, constraint.a.pos.y);
+          ctx.lineTo(constraint.b.pos.x, constraint.b.pos.y);
+          ctx.stroke();
+        }
+      }
+      for (const p of web.particles) {
+          ctx.beginPath();
+          ctx.arc(p.pos.x, p.pos.y, 1, 0, 2 * Math.PI);
+          ctx.fillStyle = '#eee';
+          ctx.fill();
+      }
+
+      // 2. Draw Spider
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 1.5;
+      for (const constraint of spider.constraints) {
+        if (constraint instanceof DistanceConstraint) {
+          ctx.beginPath();
+          ctx.moveTo(constraint.a.pos.x, constraint.a.pos.y);
+          ctx.lineTo(constraint.b.pos.x, constraint.b.pos.y);
+          ctx.stroke();
+        }
+      }
+      ctx.fillStyle = 'red';
+      ctx.beginPath(); ctx.arc(spider.head.pos.x, spider.head.pos.y, 4, 0, 2 * Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.arc(spider.thorax.pos.x, spider.thorax.pos.y, 4, 0, 2 * Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.arc(spider.abdomen.pos.x, spider.abdomen.pos.y, 8, 0, 2 * Math.PI); ctx.fill();
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
