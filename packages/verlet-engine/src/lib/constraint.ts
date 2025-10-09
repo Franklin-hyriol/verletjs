@@ -412,3 +412,59 @@ export class MinMaxAngleConstraint {
 		ctx.lineWidth = tmp;
 	}
 }
+
+/**
+ * A constraint that forces a particle to stay on one side of a plane (a line in 2D).
+ */
+export class PlaneConstraint {
+  /** The particle to be constrained. */
+  a: Particle;
+  /** A point on the plane. */
+  origin: Vec2;
+  /** The normal vector of the plane (points to the allowed side). */
+  normal: Vec2;
+
+  /**
+   * @param a The particle to be constrained.
+   * @param origin A point on the plane.
+   * @param normal The normal vector of the plane.
+   */
+  constructor(a: Particle, origin: Vec2, normal: Vec2) {
+    this.a = a;
+    this.origin = origin;
+    this.normal = normal.normal(); // Ensure it's a unit vector
+  }
+
+  /**
+   * Relaxes the constraint by projecting the particle back onto the plane if it has crossed.
+   * @param stepCoef A coefficient for the relaxation step.
+   */
+  relax(stepCoef: number) {
+    const radius = this.a.style?.radius || 0;
+    const v = this.a.pos.sub(this.origin);
+    const dist = v.dot(this.normal);
+
+    if (dist < radius) {
+      const correction = this.normal.scale((radius - dist) * stepCoef);
+      this.a.pos.mutableAdd(correction);
+    }
+  }
+
+  /**
+   * Draws the constraint on a 2D canvas context for visualization.
+   * @param ctx The canvas context to draw on.
+   */
+  draw(ctx: CanvasRenderingContext2D) {
+    // The normal doesn't need to be drawn, but the plane line itself is useful.
+    const p1 = this.origin.add(new Vec2(this.normal.y, -this.normal.x).scale(2000));
+    const p2 = this.origin.sub(new Vec2(this.normal.y, -this.normal.x).scale(2000));
+    
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.strokeStyle = '#c44dff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
