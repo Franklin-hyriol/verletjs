@@ -1,0 +1,107 @@
+---
+sidebar_position: 5
+---
+
+# Rendering
+
+Once your simulation is running, the next step is to visualize it. The way you render the simulation depends on whether you are using `verlet-engine` or `verlet-react`.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  In `verlet-react`, rendering is handled for you automatically by the `<VerletCanvas>` component.
+
+  `<VerletCanvas>` creates an HTML5 `<canvas>` element and a `VerletJS` simulation instance. It then automatically renders all the child components (like `<LineSegments>`, `<Cloth>`, etc.) on every frame.
+
+  ```jsx
+  import { VerletCanvas, LineSegments } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const App = () => {
+    return (
+      // This component does all the work:
+      // 1. Creates a simulation
+      // 2. Creates a <canvas>
+      // 3. Runs the animation loop
+      // 4. Renders all objects
+      <VerletCanvas width={500} height={500}>
+        <LineSegments
+          vertices={[
+            new Vec2(100, 100),
+            new Vec2(200, 100),
+            new Vec2(300, 100),
+          ]}
+        />
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  You can customize the appearance of the objects by passing style props to the components.
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  With `verlet-engine`, you are in full control of the rendering. The library only handles the physics; it does not draw anything on its own.
+
+  The standard way to render is to use an HTML5 `<canvas>`. In your animation loop, after you update the simulation, you can clear the canvas and then loop through all the objects to draw them.
+
+  Here is a complete example:
+
+  ```html
+  <canvas id="canvas" width="500" height="500"></canvas>
+  ```
+
+  ```javascript
+  import { VerletJS, Vec2 } from 'verlet-engine';
+  import { lineSegments } from 'verlet-engine/objects';
+
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const sim = new VerletJS(500, 500);
+
+  const vertices = [
+    new Vec2(100, 100),
+    new Vec2(200, 100),
+    new Vec2(300, 100),
+  ];
+  lineSegments(sim, vertices, 1);
+
+  function animate() {
+    // 1. Update the simulation
+    sim.frame(16);
+
+    // 2. Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 3. Draw the simulation objects
+    for (const c of sim.composites) {
+      // Draw constraints
+      for (const constraint of c.constraints) {
+        if (constraint.draw) {
+          constraint.draw(ctx);
+        }
+      }
+      // Draw particles
+      for (const p of c.particles) {
+        ctx.beginPath();
+        ctx.arc(p.pos.x, p.pos.y, 2, 0, 2 * Math.PI);
+        ctx.fillStyle = '#2dad8f';
+        ctx.fill();
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+  ```
+  
+  Notice that both `Particle` and `Constraint` objects have a `draw(ctx)` method that you can use for convenience.
+
+  </TabItem>
+</Tabs>

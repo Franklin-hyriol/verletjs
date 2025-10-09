@@ -1,0 +1,82 @@
+---
+sidebar_position: 2
+---
+
+# Getting Started
+
+Let's get you up and running with your first Verlet.js simulation. Choose your preferred environment below.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  ### 1. Installation
+
+  ```bash
+  npm install verlet-react verlet-engine
+  ```
+
+  ### 2. Create your Simulation
+
+  Use the `<VerletCanvas>` component to create a simulation world and add objects to it.
+
+  ```jsx
+  import React from 'react';
+  import { VerletCanvas, Point } from 'verlet-react';
+
+  const App = () => {
+    return (
+      <VerletCanvas width={500} height={500}>
+        <Point position={{ x: 250, y: 50 }} />
+      </VerletCanvas>
+    );
+  };
+
+  export default App;
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  ### 1. Installation
+
+  ```bash
+  npm install verlet-engine
+  ```
+
+  ### 2. Create your Simulation
+
+  Create an HTML file with a `<canvas>` element, then use the `VerletJS` class to create a simulation.
+
+  ```html
+  <canvas id="verlet-canvas" width="500" height="500"></canvas>
+  ```
+
+  ```javascript
+  import { VerletJS, Particle, Vec2 } from 'verlet-engine';
+
+  const canvas = document.getElementById('verlet-canvas');
+  const ctx = canvas.getContext('2d');
+
+  const sim = new VerletJS(500, 500);
+  const particle = new Particle(new Vec2(250, 50));
+  sim.composites.push({ particles: [particle], constraints: [] });
+
+  function animate() {
+    sim.frame();
+    
+    ctx.clearRect(0, 0, 500, 500);
+    ctx.beginPath();
+    ctx.arc(particle.pos.x, particle.pos.y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+  ```
+
+  </TabItem>
+</Tabs>

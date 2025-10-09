@@ -1,0 +1,157 @@
+---
+sidebar_position: 3
+---
+
+# Composites
+
+While you can build any shape by creating individual particles and constraints, `verlet-engine` provides a convenient way to group them into a single entity called a **Composite**. A composite is simply a collection of particles and constraints that are treated as a single object.
+
+The library also offers several helper functions to create common pre-made composites.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Line Segments
+
+This is the most basic composite, creating a chain of particles connected by distance constraints.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  The `<LineSegments>` component is the React equivalent of the `lineSegments` composite.
+
+  ```jsx
+  import { VerletCanvas, LineSegments } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const App = () => {
+    return (
+      <VerletCanvas>
+        <LineSegments
+          vertices={[
+            new Vec2(100, 100),
+            new Vec2(200, 100),
+            new Vec2(300, 100),
+          ]}
+        />
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  The `lineSegments` function creates a composite of connected points.
+
+  ```javascript
+  import { VerletJS, Vec2 } from 'verlet-engine';
+  import { lineSegments } from 'verlet-engine/objects';
+
+  const sim = new VerletJS(500, 500);
+
+  const vertices = [
+    new Vec2(100, 100),
+    new Vec2(200, 100),
+    new Vec2(300, 100),
+  ];
+
+  // Create the line segments with a stiffness of 1
+  lineSegments(sim, vertices, 1);
+  ```
+
+  </TabItem>
+</Tabs>
+
+## Cloth
+
+This composite creates a 2D grid of particles, all connected to their neighbors. This is perfect for simulating flags, fabric, or other deformable surfaces.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  The `<Cloth>` component creates a cloth simulation. You can specify the position, dimensions, and number of segments.
+
+  ```jsx
+  import { VerletCanvas, Cloth } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const App = () => {
+    return (
+      <VerletCanvas>
+        <Cloth
+          origin={new Vec2(250, 150)}
+          width={200}
+          height={100}
+          segments={15}
+        />
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  The `cloth` function generates a grid of particles.
+
+  ```javascript
+  import { VerletJS, Vec2 } from 'verlet-engine';
+  import { cloth } from 'verlet-engine/objects';
+
+  const sim = new VerletJS(500, 500);
+
+  // Create a cloth centered at (250, 150)
+  // 200px wide, 100px high, with 15 segments
+  // Pin every 3rd particle on the top row
+  // Stiffness of 1
+  cloth(sim, new Vec2(250, 150), 200, 100, 15, 3, 1);
+  ```
+
+  </TabItem>
+</Tabs>
+
+## Tire
+
+This composite creates a circular object with spokes, ideal for vehicles or wheels.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  The `<Tire>` component creates a tire composite.
+
+  ```jsx
+  import { VerletCanvas, Tire } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const App = () => {
+    return (
+      <VerletCanvas>
+        <Tire
+          origin={new Vec2(250, 250)}
+          radius={50}
+          segments={10}
+        />
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  The `tire` function creates a circular structure of particles.
+
+  ```javascript
+  import { VerletJS, Vec2 } from 'verlet-engine';
+  import { tire } from 'verlet-engine/objects';
+
+  const sim = new VerletJS(500, 500);
+
+  // Create a tire at (250, 250) with a radius of 50
+  // 10 segments, spoke stiffness of 0.1, tread stiffness of 1
+  tire(sim, new Vec2(250, 250), 50, 10, 0.1, 1);
+  ```
+
+  </TabItem>
+</Tabs>

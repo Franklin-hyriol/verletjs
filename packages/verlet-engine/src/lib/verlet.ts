@@ -35,12 +35,18 @@ export class Particle {
 	pos: Vec2;
 	/** Position of the particle in the previous frame, used to calculate velocity. @type {Vec2} */
 	lastPos: Vec2;
+	/** Acceleration of the particle. @type {Vec2} */
+	acc: Vec2;
+	/** Mass of the particle. @type {number} */
+	mass: number;
   /** Optional style for rendering */
   style?: ParticleStyle;
 
-	constructor(pos: Vec2) {
+	constructor(pos: Vec2, mass = 1) {
 		this.pos = new Vec2().mutableSet(pos);
 		this.lastPos = new Vec2().mutableSet(pos);
+		this.acc = new Vec2(0, 0);
+		this.mass = mass;
 	}
 }
 
@@ -148,6 +154,11 @@ export class VerletJS {
 	frame(deltaTime: number) {
 		for (const c of this.composites) {
 			for (const p of c.particles) {
+				// 1. Accumulate forces
+				if (p.mass > 0) {
+					p.acc.mutableSet(this.gravity);
+				}
+
 				const velocity = p.pos.sub(p.lastPos).scale(this.friction);
 
 				if (p.pos.y >= this.height - 1 && velocity.length2() > 0.000001) {
@@ -158,8 +169,13 @@ export class VerletJS {
 				}
 
 				p.lastPos.mutableSet(p.pos);
-				p.pos.mutableAdd(this.gravity);
+
+				// 2. Integration
+				p.pos.mutableAdd(p.acc); // Use accumulator
 				p.pos.mutableAdd(velocity);
+
+				// 3. Reset accumulator
+				p.acc.mutableSet(new Vec2(0, 0));
 			}
 		}
 

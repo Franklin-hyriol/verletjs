@@ -1,0 +1,85 @@
+---
+sidebar_position: 5
+---
+
+# Composite
+
+A `Composite` is a container for a group of `Particle` and `Constraint` objects that should be treated as a single entity. It is the primary way to add objects to the `VerletJS` simulation.
+
+## Constructor
+
+### `new Composite()`
+
+Creates a new, empty `Composite` instance.
+
+#### Example
+
+```javascript
+import { Composite } from 'verlet-engine';
+
+const myObject = new Composite();
+```
+
+---
+
+## Properties
+
+### `particles`
+
+- **Type:** `Particle[]`
+
+An array containing all the `Particle` instances in this composite.
+
+#### Example
+
+```javascript
+import { Particle, Vec2 } from 'verlet-engine';
+
+myObject.particles.push(new Particle(new Vec2(100, 100)));
+```
+
+---
+
+### `constraints`
+
+- **Type:** `Constraint[]`
+
+An array containing all the `Constraint` instances that apply to the particles within this composite.
+
+#### Example
+
+```javascript
+import { DistanceConstraint } from 'verlet-engine';
+
+const p1 = myObject.particles[0];
+const p2 = myObject.particles[1];
+
+myObject.constraints.push(new DistanceConstraint(p1, p2, 1));
+```
+
+---
+
+## Methods
+
+### `pin(index, [pos])`
+
+A convenience method to create a `PinConstraint` for a particle within the composite.
+
+#### Parameters
+
+- `index` (number): The index of the particle to pin in the `particles` array.
+- `pos` ([`Vec2`](/docs/api-reference/vec2), optional): The position to pin the particle to. If not provided, the particle's current position is used.
+
+#### Returns
+
+- ([`PinConstraint`](/docs/api-reference/constraints#pinconstraint)): The created `PinConstraint` instance.
+
+#### Example
+
+```javascript
+// Pin the first particle of the composite to its current location
+myObject.pin(0);
+
+// Pin the second particle to a specific point
+myObject.pin(1, new Vec2(200, 100));
+```

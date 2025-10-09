@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PlaneConstraint Demo</title>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #222; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script type="module">
+    import { VerletJS, Particle, Composite, Vec2, PlaneConstraint } from '../../dist/verlet-engine.es.js';
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const sim = new VerletJS(canvas.width, canvas.height);
+    sim.gravity = new Vec2(0, 0.3);
+    sim.friction = 0.98;
+
+    // Create a composite to hold the balls
+    const balls = new Composite();
+
+    // Create some balls
+    const ballRadius = 10;
+    const colors = ['#ffca28', '#ff6f61', '#8863f2', '#63f2a7', '#f263e2', '#ff8c00'];
+    for (let i = 0; i < 15; i++) {
+      const ball = new Particle(new Vec2(100 + i * 30, 50 + Math.random() * 50));
+      ball.style = { radius: ballRadius, color: colors[i % colors.length] };
+      balls.particles.push(ball);
+    }
+
+    sim.composites.push(balls);
+
+    // --- World Constraints ---
+    // Inclined plane
+    const planeOrigin = new Vec2(canvas.width / 2, canvas.height * 0.7);
+    const planeNormal = new Vec2(-0.2, -1).normal(); // Angled upwards
+    const inclinedPlane = new PlaneConstraint(balls.particles[0], planeOrigin, planeNormal); // Temp for drawing
+
+    // Add constraints to all balls
+    for (const p of balls.particles) {
+      balls.constraints.push(new PlaneConstraint(p, planeOrigin, planeNormal));
+      // World bounds
+      balls.constraints.push(new PlaneConstraint(p, new Vec2(0, 0), new Vec2(1, 0))); // Left wall
+      balls.constraints.push(new PlaneConstraint(p, new Vec2(canvas.width, 0), new Vec2(-1, 0))); // Right wall
+      balls.constraints.push(new PlaneConstraint(p, new Vec2(0, 0), new Vec2(0, 1))); // Top wall
+      balls.constraints.push(new PlaneConstraint(p, new Vec2(0, canvas.height), new Vec2(0, -1))); // Bottom wall
+    }
+
+    // --- Mouse Interaction ---
+    let draggedParticle = null;
+    canvas.addEventListener('mousedown', (e) => {
+      const mousePos = new Vec2(e.clientX, e.clientY);
+      let nearest = null;
+      let min_dist_sq = Infinity;
+      balls.particles.forEach(p => {
+        const dist_sq = p.pos.dist2(mousePos);
+        if (dist_sq < min_dist_sq) {
+          nearest = p;
+          min_dist_sq = dist_sq;
+        }
+      });
+
+      if (min_dist_sq < (ballRadius * ballRadius * 2)) { 
+        draggedParticle = nearest;
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (draggedParticle) {
+        draggedParticle.pos.x = e.clientX;
+        draggedParticle.pos.y = e.clientY;
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      draggedParticle = null;
+    });
+
+    // --- Animation Loop ---
+    function animate() {
+      sim.frame(16);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw the balls
+      for (const p of balls.particles) {
+        ctx.fillStyle = p.style.color;
+        ctx.beginPath();
+        ctx.arc(p.pos.x, p.pos.y, p.style.radius, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+
+      // Draw the inclined plane
+      inclinedPlane.draw(ctx);
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

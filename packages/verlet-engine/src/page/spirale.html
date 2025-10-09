@@ -38,7 +38,7 @@
         <a href="CollisionConstraint.html">Collision Constraint</a>
     </nav>
     <h1>Test: Square</h1>
-    <canvas id="scratch" style="width: 800px; height: 500px;"></canvas>
+    <canvas id="scratch"></canvas>
 
     <script type="module">
         import { VerletJS, Vec2, PinConstraint, lineSegments, DistanceConstraint, Composite, Particle } from '../../dist/verlet-engine.es.js';
@@ -46,8 +46,13 @@
         window.onload = function () {
             const canvas = document.getElementById("scratch");
             const ctx = canvas.getContext("2d");
+
+            canvas.style.width = window.innerWidth - 20 + 'px';
+            canvas.style.height = window.innerHeight - 100 + 'px';
+
             const width = parseInt(canvas.style.width);
             const height = parseInt(canvas.style.height);
+
             const dpr = window.devicePixelRatio || 1;
             canvas.width = width * dpr;
             canvas.height = height * dpr;
@@ -65,9 +70,9 @@
             const tensor = 0.3;
 
             const origin = new Vec2(centerX, centerY); // Le centre de la toile
-            const maxOuterRadius = 200; // Rayon maximal de la toile
+            const maxOuterRadius = 300; // Rayon maximal de la toile
             const numRadialSegments = 20; // Nombre de "rayons"
-            const numConcentricRings = 10; // Nombre d'anneaux concentriques
+            const numConcentricRings = 5; // Nombre d'anneaux concentriques
 
             const angularStep = (2 * Math.PI) / numRadialSegments;
             const totalParticles = numRadialSegments * numConcentricRings; // Nombre total de particules
