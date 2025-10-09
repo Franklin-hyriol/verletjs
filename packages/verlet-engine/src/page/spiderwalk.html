@@ -82,6 +82,8 @@
       composite.constraints.push(new DistanceConstraint(composite.abdomen, composite.thorax, bodyStiffness));
       composite.constraints.push(new AngleConstraint(composite.abdomen, composite.thorax, composite.head, 0.4));
 
+      composite.feet = [];
+
       for (let i = 0; i < 4; ++i) {
         const lenCoef = (i === 1 || i === 2) ? 0.8 : 1;
         const leg1_l = new Particle(composite.thorax.pos.add(new Vec2(-3, (i - 1.5) * 3)));
@@ -93,6 +95,8 @@
         const foot_l = new Particle(leg3_l.pos.add(new Vec2(-20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
         const foot_r = new Particle(leg3_r.pos.add(new Vec2(20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
         composite.particles.push(leg1_l, leg1_r, leg2_l, leg2_r, leg3_l, leg3_r, foot_l, foot_r);
+        composite.feet.push(foot_l, foot_r);
+
         composite.constraints.push(new DistanceConstraint(leg1_l, composite.thorax, legStiffness));
         composite.constraints.push(new DistanceConstraint(leg1_r, composite.thorax, legStiffness));
         composite.constraints.push(new DistanceConstraint(leg2_l, leg1_l, legStiffness));
@@ -117,6 +121,25 @@
 
     const spider = createSpider(new Vec2(canvas.width / 2, canvas.height / 2));
     sim.composites.push(spider);
+
+    // Snap feet to the nearest web particle on initialization
+    if (!spider.feet) spider.feet = []; // Ensure feet array exists if createSpider is old
+    spider.feet.forEach(foot => {
+      let nearestNode = null;
+      let min_dist = Infinity;
+      web.particles.forEach(node => {
+        const dist = foot.pos.dist(node.pos);
+        if (dist < min_dist) {
+          min_dist = dist;
+          nearestNode = node;
+        }
+      });
+
+      if (nearestNode) {
+        foot.pos.mutableSet(nearestNode.pos);
+        foot.lastPos.mutableSet(nearestNode.pos);
+      }
+    });
 
     // Simple animation loop
     function animate() {
