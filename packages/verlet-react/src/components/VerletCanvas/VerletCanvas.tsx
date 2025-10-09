@@ -9,6 +9,7 @@ interface VerletCanvasProps extends Omit<React.CanvasHTMLAttributes<HTMLCanvasEl
   height: number;
   children?: React.ReactNode;
   options?: VerletOptions;
+  cursor?: string;
   onCanvasMouseDown?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
   onCanvasMouseMove?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
   onCanvasMouseUp?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
@@ -24,6 +25,7 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
   height, 
   children, 
   options,
+  cursor,
   onCanvasMouseDown,
   onCanvasMouseMove,
   onCanvasMouseUp,
@@ -100,7 +102,7 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
         ref={canvasRef}
         width={width}
         height={height}
-        style={{ width: `${width}px`, height: `${height}px` }}
+        style={{ width: `${width}px`, height: `${height}px`, cursor: cursor || 'default' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
