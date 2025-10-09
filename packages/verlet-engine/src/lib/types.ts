@@ -10,3 +10,9 @@ export interface ConstraintStyle {
   lineWidth?: number;
   radius?: number;
 }
+
+export interface IConstraint {
+  type: string;
+  relax(stepCoef: number): void;
+  draw?(ctx: CanvasRenderingContext2D): void;
+}

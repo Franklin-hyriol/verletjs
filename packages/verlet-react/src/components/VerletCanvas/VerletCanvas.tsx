@@ -1,30 +1,41 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import { useVerlet } from '../../hooks/useVerlet';
-import { Vec2, PinConstraint } from 'verlet-engine';
+import { useVerlet, type VerletOptions } from '../../hooks/useVerlet';
 import { VerletContext } from '../../context/VerletContext';
+import type { IConstraint, Composite } from 'verlet-engine';
 
 // Define the props for the VerletCanvas component
-interface VerletCanvasProps {
+interface VerletCanvasProps extends Omit<React.CanvasHTMLAttributes<HTMLCanvasElement>, 'onMouseDown' | 'onMouseMove' | 'onMouseUp' | 'onMouseLeave'> {
   width: number;
   height: number;
   children?: React.ReactNode;
+  options?: VerletOptions;
+  onCanvasMouseDown?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasMouseMove?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasMouseUp?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasMouseLeave?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
 }
 
 /**
  * A React component that provides a canvas for rendering a VerletJS simulation.
- * It handles the simulation loop, drawing, and mouse interactions.
+ * It handles the simulation loop and drawing.
  */
-export const VerletCanvas: React.FC<VerletCanvasProps> = ({ width, height, children }) => {
+export const VerletCanvas: React.FC<VerletCanvasProps> = ({ 
+  width, 
+  height, 
+  children, 
+  options,
+  onCanvasMouseDown,
+  onCanvasMouseMove,
+  onCanvasMouseUp,
+  onCanvasMouseLeave,
+  ...props 
+}) => {
   // Use our custom hook to manage the simulation
-  const { engine, composites } = useVerlet({ width, height });
+  const { engine, composites } = useVerlet({ width, height, options });
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Create the context value
   const contextValue = useMemo(() => ({ engine }), [engine]);
-
-  // Refs for mouse interaction state
-  const mouse = useRef(new Vec2(0, 0));
-  const draggedEntity = useRef<any>(null);
 
   // This effect handles all the drawing on the canvas
   useEffect(() => {
@@ -47,7 +58,7 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({ width, height, child
 
     for (const c of composites) {
       // Draw constraints
-      for (const constraint of c.constraints) {
+      for (const constraint of c.constraints as IConstraint[]) {
         if (typeof constraint.draw === 'function') {
           constraint.draw(ctx);
         }
@@ -56,70 +67,30 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({ width, height, child
       // Draw particles
       for (const p of c.particles) {
         ctx.beginPath();
-        ctx.arc(p.pos.x, p.pos.y, 2, 0, 2 * Math.PI);
-        ctx.fillStyle = "#2dad8f";
+        const radius = p.style?.radius || 2;
+        const color = p.style?.color || '#2dad8f';
+        ctx.arc(p.pos.x, p.pos.y, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = color;
         ctx.fill();
       }
     }
-
-    // Highlight dragged or nearest entity
-    const nearest = draggedEntity.current || nearestEntity();
-    if (nearest) {
-        ctx.beginPath();
-        ctx.arc(nearest.pos.x, nearest.pos.y, 8, 0, 2 * Math.PI);
-        ctx.strokeStyle = "#4f545c";
-        ctx.stroke();
-    }
-
   }, [composites, width, height, engine]); // Re-run effect if composites or dimensions change
 
-
-  // --- Mouse Interaction Logic ---
-
-  const nearestEntity = () => {
-    if (!engine) return null;
-    let d2Nearest = Infinity;
-    let entity = null;
-    const selectionRadius = 20;
-
-    for (const c of engine.composites) {
-        for (const p of c.particles) {
-            const d2 = p.pos.dist2(mouse.current);
-            if (d2 < d2Nearest && d2 < selectionRadius * selectionRadius) {
-                entity = p;
-                d2Nearest = d2;
-            }
-        }
-    }
-    
-    for (const c of engine.composites) {
-        for (const constraint of c.constraints) {
-            if (constraint instanceof PinConstraint && constraint.a === entity) {
-                return constraint;
-            }
-        }
-    }
-
-    return entity;
-  }
-
-  const handleMouseDown = () => {
-    draggedEntity.current = nearestEntity();
-  };
-
-  const handleMouseUp = () => {
-    draggedEntity.current = null;
+  // Explicit event handlers to ensure correct closure over `composites`
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (onCanvasMouseDown) onCanvasMouseDown(e, composites);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    mouse.current.x = e.clientX - rect.left;
-    mouse.current.y = e.clientY - rect.top;
-    
-    if (draggedEntity.current) {
-        draggedEntity.current.pos.mutableSet(mouse.current);
-    }
+    if (onCanvasMouseMove) onCanvasMouseMove(e, composites);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (onCanvasMouseUp) onCanvasMouseUp(e, composites);
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (onCanvasMouseLeave) onCanvasMouseLeave(e, composites);
   };
 
   // The component renders the canvas and provides the simulation context to its children.
@@ -131,9 +102,10 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({ width, height, child
         height={height}
         style={{ width: `${width}px`, height: `${height}px` }}
         onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseUp} // Stop dragging if mouse leaves canvas
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        {...props} // Pass down any other props
       />
       {children}
     </VerletContext.Provider>

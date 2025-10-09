@@ -31,6 +31,7 @@ import type { ConstraintStyle } from './types';
  * Constrains two particles to a specific distance from each other.
  */
 export class DistanceConstraint {
+	type = 'DistanceConstraint';
 	/** The first particle. */
 	a: Particle;
 	/** The second particle. */
@@ -95,6 +96,7 @@ export class DistanceConstraint {
  * Constrains two particles to prevent them from overlapping.
  */
 export class CollisionConstraint {
+	type = 'CollisionConstraint';
 	/** The first particle. */
 	a: Particle;
 	/** The second particle. */
@@ -162,6 +164,7 @@ export class CollisionConstraint {
  * Constrains a particle to a fixed point in space.
  */
 export class PinConstraint {
+	type = 'PinConstraint';
 	/** The particle to be pinned. */
 	a: Particle;
 	/** The fixed point in space where the particle is pinned. */
@@ -202,6 +205,7 @@ export class PinConstraint {
  * Constrains the angle between three particles.
  */
 export class AngleConstraint {
+	type = 'AngleConstraint';
 	/** The first particle of the angle. */
 	a: Particle;
 	/** The center particle (the vertex of the angle). */
@@ -271,6 +275,7 @@ export class AngleConstraint {
  * Constrains two particles to a specific distance from each other.
  */
 export class MinMaxDistanceConstraint {
+	type = 'MinMaxDistanceConstraint';
 	/** The first particle. */
 	a: Particle;
 	/** The second particle. */
@@ -334,6 +339,7 @@ export class MinMaxDistanceConstraint {
  * Constrains the angle between three particles to a specific range.
  */
 export class MinMaxAngleConstraint {
+	type = 'MinMaxAngleConstraint';
 	/** The first particle of the angle. */
 	a: Particle;
 	/** The center particle (the vertex of the angle). */
@@ -417,6 +423,7 @@ export class MinMaxAngleConstraint {
  * A constraint that forces a particle to stay on one side of a plane (a line in 2D).
  */
 export class PlaneConstraint {
+  type = 'PlaneConstraint';
   /** The particle to be constrained. */
   a: Particle;
   /** A point on the plane. */
