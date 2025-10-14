@@ -1,11 +1,14 @@
 import React from 'react';
-import { VerletJS } from 'verlet-engine';
+import { VerletJS, Particle } from 'verlet-engine';
 
 /**
  * Defines the shape of the context data.
  */
 export interface VerletContextType {
-  engine: VerletJS | null;
+  engine: VerletJS;
+  getParticleById: (id: string) => Particle | undefined;
+  registerParticle: (id: string, particle: Particle) => void;
+  unregisterParticle: (id: string) => void;
 }
 
 /**

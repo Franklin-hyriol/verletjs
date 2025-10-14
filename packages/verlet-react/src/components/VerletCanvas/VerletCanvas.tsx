@@ -1,9 +1,8 @@
-import React, { useRef, useEffect, useMemo } from 'react';
-import { useVerlet, type VerletOptions } from '../../hooks/useVerlet';
-import { VerletContext } from '../../context/VerletContext';
-import type { IConstraint, Composite } from 'verlet-engine';
+import React, { useRef, useMemo, useCallback, useEffect } from 'react';
+import { VerletContext, type VerletContextType } from '../../context/VerletContext';
+import { useVerlet } from '../../hooks/useVerlet';
+import { Composite, Particle, type VerletOptions, type IConstraint } from 'verlet-engine';
 
-// Define the props for the VerletCanvas component
 interface VerletCanvasProps extends Omit<React.CanvasHTMLAttributes<HTMLCanvasElement>, 'onMouseDown' | 'onMouseMove' | 'onMouseUp' | 'onMouseLeave'> {
   width: number;
   height: number;
@@ -16,10 +15,6 @@ interface VerletCanvasProps extends Omit<React.CanvasHTMLAttributes<HTMLCanvasEl
   onCanvasMouseLeave?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
 }
 
-/**
- * A React component that provides a canvas for rendering a VerletJS simulation.
- * It handles the simulation loop and drawing.
- */
 export const VerletCanvas: React.FC<VerletCanvasProps> = ({ 
   width, 
   height, 
@@ -32,41 +27,46 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
   onCanvasMouseLeave,
   ...props 
 }) => {
-  // Use our custom hook to manage the simulation
   const { engine, composites } = useVerlet({ width, height, options });
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particleIdMap = useRef<Map<string, Particle>>(new Map());
 
-  // Create the context value
-  const contextValue = useMemo(() => ({ engine }), [engine]);
+  const getParticleById = useCallback((id: string) => particleIdMap.current.get(id), []);
+  
+  const registerParticle = useCallback((id: string, particle: Particle) => {
+    particleIdMap.current.set(id, particle);
+  }, []);
 
-  // This effect handles all the drawing on the canvas
+  const unregisterParticle = useCallback((id: string) => {
+    particleIdMap.current.delete(id);
+  }, []);
+
+  const contextValue = useMemo((): VerletContextType | null => {
+    if (!engine) return null;
+    return {
+      engine,
+      getParticleById,
+      registerParticle,
+      unregisterParticle,
+    };
+  }, [engine, getParticleById, registerParticle, unregisterParticle]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !engine) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // --- High-density (Retina) screen scaling ---
     const dpr = window.devicePixelRatio || 1;
     if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
         canvas.width = width * dpr;
         canvas.height = height * dpr;
         ctx.scale(dpr, dpr);
     }
-
-    // --- Drawing Logic ---
     ctx.clearRect(0, 0, width, height);
-
     for (const c of composites) {
-      // Draw constraints
       for (const constraint of c.constraints as IConstraint[]) {
-        if (typeof constraint.draw === 'function') {
-          constraint.draw(ctx);
-        }
+        if (typeof constraint.draw === 'function') constraint.draw(ctx);
       }
-
-      // Draw particles
       for (const p of c.particles) {
         ctx.beginPath();
         const radius = p.style?.radius || 2;
@@ -76,26 +76,15 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
         ctx.fill();
       }
     }
-  }, [composites, width, height, engine]); // Re-run effect if composites or dimensions change
+  }, [composites, width, height, engine]);
 
-  // Explicit event handlers to ensure correct closure over `composites`
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (onCanvasMouseDown) onCanvasMouseDown(e, composites);
-  };
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseDown?.(e, composites);
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseMove?.(e, composites);
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseUp?.(e, composites);
+  const handleMouseLeave = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseLeave?.(e, composites);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (onCanvasMouseMove) onCanvasMouseMove(e, composites);
-  };
+  if (!contextValue) return null;
 
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (onCanvasMouseUp) onCanvasMouseUp(e, composites);
-  };
-
-  const handleMouseLeave = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (onCanvasMouseLeave) onCanvasMouseLeave(e, composites);
-  };
-
-  // The component renders the canvas and provides the simulation context to its children.
   return (
     <VerletContext.Provider value={contextValue}>
       <canvas
@@ -107,7 +96,7 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        {...props} // Pass down any other props
+        {...props}
       />
       {children}
     </VerletContext.Provider>

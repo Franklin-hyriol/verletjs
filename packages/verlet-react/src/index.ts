@@ -17,3 +17,4 @@ export { Point } from './components/Point/Point';
 export { LineSegments } from './components/LineSegments/LineSegments';
 export { Cloth } from './components/Cloth/Cloth';
 export { Tire } from './components/Tire/Tire';
+export { DistanceConstraint } from './components/DistanceConstraint/DistanceConstraint';

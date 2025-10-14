@@ -1,22 +1,39 @@
 import { useEffect } from 'react';
+import { Vec2, Particle, Composite, PinConstraint } from 'verlet-engine';
 import { useVerletContext } from '../../hooks/useVerletContext';
-import { point, Vec2 } from 'verlet-engine';
 
 interface PointProps {
-  position: Vec2;
+  id: string;
+  pos: Vec2;
+  pinned?: boolean;
 }
 
-export const Point = ({ position }: PointProps) => {
-  const { engine } = useVerletContext();
+export const Point: React.FC<PointProps> = ({ id, pos, pinned = false }) => {
+  const { engine, registerParticle, unregisterParticle } = useVerletContext();
 
   useEffect(() => {
-    if (engine) {
-      const p = point(engine, position);
-      return () => {
-        engine.composites.splice(engine.composites.indexOf(p), 1);
-      };
+    if (!engine) return;
+
+    const particle = new Particle(pos);
+    const composite = new Composite();
+    composite.particles.push(particle);
+
+    if (pinned) {
+      const pin = new PinConstraint(particle, particle.pos);
+      composite.constraints.push(pin);
     }
-  }, [engine, position]);
+    
+    engine.composites.push(composite);
+    registerParticle(id, particle);
+
+    return () => {
+      unregisterParticle(id);
+      const index = engine.composites.indexOf(composite);
+      if (index > -1) {
+        engine.composites.splice(index, 1);
+      }
+    };
+  }, [engine, id, pos, pinned, registerParticle, unregisterParticle]);
 
   return null;
 };
