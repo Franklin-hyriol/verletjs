@@ -1,4 +1,3 @@
-import React from 'react';
 import { Switch, Route } from 'react-router-dom';
 import { LineSegmentsPage } from './pages/LineSegmentsPage';
 import { HomePage } from './pages/HomePage';
