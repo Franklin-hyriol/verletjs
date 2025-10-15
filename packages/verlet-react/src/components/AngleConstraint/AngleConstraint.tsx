@@ -1,31 +1,33 @@
 import { useEffect, useRef } from 'react';
-import { DistanceConstraint as VerletDistanceConstraint, type ConstraintStyle } from 'verlet-engine';
+import { AngleConstraint as VerletAngleConstraint, type ConstraintStyle } from 'verlet-engine';
 import { useVerletContext } from '../../hooks/useVerletContext';
 
-interface DistanceConstraintProps {
+interface AngleConstraintProps {
   from: string;
+  center: string;
   to: string;
   stiffness?: number;
-  distance?: number;
   style?: ConstraintStyle;
 }
 
-export const DistanceConstraint: React.FC<DistanceConstraintProps> = ({ from, to, stiffness = 1, distance, style }) => {
+export const AngleConstraint: React.FC<AngleConstraintProps> = ({ from, center, to, stiffness = 1, style }) => {
   const { engine, getParticleById } = useVerletContext();
-  const constraintRef = useRef<VerletDistanceConstraint | null>(null);
+  const constraintRef = useRef<VerletAngleConstraint | null>(null);
 
   // Effect for creation and destruction
   useEffect(() => {
     if (!engine) return;
 
     const particleA = getParticleById(from);
-    const particleB = getParticleById(to);
+    const particleB = getParticleById(center);
+    const particleC = getParticleById(to);
 
-    if (particleA && particleB) {
-      const ownerComposite = engine.composites.find(c => c.particles.includes(particleA));
+    if (particleA && particleB && particleC) {
+      // Assume all particles are in the same composite, find it using the center particle
+      const ownerComposite = engine.composites.find(c => c.particles.includes(particleB));
 
       if (ownerComposite) {
-        const constraint = new VerletDistanceConstraint(particleA, particleB, stiffness, distance);
+        const constraint = new VerletAngleConstraint(particleA, particleB, particleC, stiffness);
         constraintRef.current = constraint;
         ownerComposite.constraints.push(constraint);
 
@@ -39,7 +41,7 @@ export const DistanceConstraint: React.FC<DistanceConstraintProps> = ({ from, to
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine, from, to, getParticleById]);
+  }, [engine, from, center, to, getParticleById]);
 
   // Effect for updating stiffness
   useEffect(() => {
@@ -47,13 +49,6 @@ export const DistanceConstraint: React.FC<DistanceConstraintProps> = ({ from, to
       constraintRef.current.stiffness = stiffness;
     }
   }, [stiffness]);
-
-  // Effect for updating distance
-  useEffect(() => {
-    if (constraintRef.current && distance !== undefined) {
-      constraintRef.current.distance = distance;
-    }
-  }, [distance]);
 
   // Effect for updating style
   useEffect(() => {

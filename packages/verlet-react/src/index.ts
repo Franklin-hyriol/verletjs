@@ -18,3 +18,5 @@ export { LineSegments } from './components/LineSegments/LineSegments';
 export { Cloth } from './components/Cloth/Cloth';
 export { Tire } from './components/Tire/Tire';
 export { DistanceConstraint } from './components/DistanceConstraint/DistanceConstraint';
+export { AngleConstraint } from './components/AngleConstraint/AngleConstraint';
+export { PlaneConstraint } from './components/PlaneConstraint/PlaneConstraint';

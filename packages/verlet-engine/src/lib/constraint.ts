@@ -430,16 +430,20 @@ export class PlaneConstraint {
   origin: Vec2;
   /** The normal vector of the plane (points to the allowed side). */
   normal: Vec2;
+  /** Optional style for rendering */
+  style?: ConstraintStyle;
 
   /**
    * @param a The particle to be constrained.
    * @param origin A point on the plane.
    * @param normal The normal vector of the plane.
+   * @param style Optional style for rendering.
    */
-  constructor(a: Particle, origin: Vec2, normal: Vec2) {
+  constructor(a: Particle, origin: Vec2, normal: Vec2, style?: ConstraintStyle) {
     this.a = a;
     this.origin = origin;
     this.normal = normal.normal(); // Ensure it's a unit vector
+    this.style = style;
   }
 
   /**
@@ -469,8 +473,8 @@ export class PlaneConstraint {
     ctx.beginPath();
     ctx.moveTo(p1.x, p1.y);
     ctx.lineTo(p2.x, p2.y);
-    ctx.strokeStyle = '#c44dff';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = this.style?.color || '#c44dff';
+    ctx.lineWidth = this.style?.lineWidth || 2;
     ctx.stroke();
   }
 }

@@ -1,31 +1,42 @@
 import { useEffect, useRef } from 'react';
-import { DistanceConstraint as VerletDistanceConstraint, type ConstraintStyle } from 'verlet-engine';
+import { MinMaxAngleConstraint as VerletMinMaxAngleConstraint, type ConstraintStyle } from 'verlet-engine';
 import { useVerletContext } from '../../hooks/useVerletContext';
 
-interface DistanceConstraintProps {
+interface MinMaxAngleConstraintProps {
   from: string;
+  center: string;
   to: string;
+  minAngle: number;
+  maxAngle: number;
   stiffness?: number;
-  distance?: number;
   style?: ConstraintStyle;
 }
 
-export const DistanceConstraint: React.FC<DistanceConstraintProps> = ({ from, to, stiffness = 1, distance, style }) => {
+export const MinMaxAngleConstraint: React.FC<MinMaxAngleConstraintProps> = ({
+  from,
+  center,
+  to,
+  minAngle,
+  maxAngle,
+  stiffness = 1,
+  style,
+}) => {
   const { engine, getParticleById } = useVerletContext();
-  const constraintRef = useRef<VerletDistanceConstraint | null>(null);
+  const constraintRef = useRef<VerletMinMaxAngleConstraint | null>(null);
 
   // Effect for creation and destruction
   useEffect(() => {
     if (!engine) return;
 
     const particleA = getParticleById(from);
-    const particleB = getParticleById(to);
+    const particleB = getParticleById(center);
+    const particleC = getParticleById(to);
 
-    if (particleA && particleB) {
-      const ownerComposite = engine.composites.find(c => c.particles.includes(particleA));
+    if (particleA && particleB && particleC) {
+      const ownerComposite = engine.composites.find(c => c.particles.includes(particleB));
 
       if (ownerComposite) {
-        const constraint = new VerletDistanceConstraint(particleA, particleB, stiffness, distance);
+        const constraint = new VerletMinMaxAngleConstraint(particleA, particleB, particleC, minAngle, maxAngle, stiffness);
         constraintRef.current = constraint;
         ownerComposite.constraints.push(constraint);
 
@@ -39,7 +50,7 @@ export const DistanceConstraint: React.FC<DistanceConstraintProps> = ({ from, to
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine, from, to, getParticleById]);
+  }, [engine, from, center, to, getParticleById]);
 
   // Effect for updating stiffness
   useEffect(() => {
@@ -47,13 +58,20 @@ export const DistanceConstraint: React.FC<DistanceConstraintProps> = ({ from, to
       constraintRef.current.stiffness = stiffness;
     }
   }, [stiffness]);
-
-  // Effect for updating distance
+  
+  // Effect for updating minAngle
   useEffect(() => {
-    if (constraintRef.current && distance !== undefined) {
-      constraintRef.current.distance = distance;
+    if (constraintRef.current && minAngle !== undefined) {
+      constraintRef.current.minAngle = minAngle;
     }
-  }, [distance]);
+  }, [minAngle]);
+
+  // Effect for updating maxAngle
+  useEffect(() => {
+    if (constraintRef.current && maxAngle !== undefined) {
+      constraintRef.current.maxAngle = maxAngle;
+    }
+  }, [maxAngle]);
 
   // Effect for updating style
   useEffect(() => {

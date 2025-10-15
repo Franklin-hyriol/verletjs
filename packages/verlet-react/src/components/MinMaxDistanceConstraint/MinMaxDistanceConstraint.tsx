@@ -1,18 +1,26 @@
 import { useEffect, useRef } from 'react';
-import { DistanceConstraint as VerletDistanceConstraint, type ConstraintStyle } from 'verlet-engine';
+import { MinMaxDistanceConstraint as VerletMinMaxDistanceConstraint, type ConstraintStyle } from 'verlet-engine';
 import { useVerletContext } from '../../hooks/useVerletContext';
 
-interface DistanceConstraintProps {
+interface MinMaxDistanceConstraintProps {
   from: string;
   to: string;
+  minDistance: number;
+  maxDistance: number;
   stiffness?: number;
-  distance?: number;
   style?: ConstraintStyle;
 }
 
-export const DistanceConstraint: React.FC<DistanceConstraintProps> = ({ from, to, stiffness = 1, distance, style }) => {
+export const MinMaxDistanceConstraint: React.FC<MinMaxDistanceConstraintProps> = ({ 
+  from, 
+  to, 
+  minDistance, 
+  maxDistance, 
+  stiffness = 1, 
+  style 
+}) => {
   const { engine, getParticleById } = useVerletContext();
-  const constraintRef = useRef<VerletDistanceConstraint | null>(null);
+  const constraintRef = useRef<VerletMinMaxDistanceConstraint | null>(null);
 
   // Effect for creation and destruction
   useEffect(() => {
@@ -25,7 +33,7 @@ export const DistanceConstraint: React.FC<DistanceConstraintProps> = ({ from, to
       const ownerComposite = engine.composites.find(c => c.particles.includes(particleA));
 
       if (ownerComposite) {
-        const constraint = new VerletDistanceConstraint(particleA, particleB, stiffness, distance);
+        const constraint = new VerletMinMaxDistanceConstraint(particleA, particleB, minDistance, maxDistance, stiffness);
         constraintRef.current = constraint;
         ownerComposite.constraints.push(constraint);
 
@@ -48,12 +56,19 @@ export const DistanceConstraint: React.FC<DistanceConstraintProps> = ({ from, to
     }
   }, [stiffness]);
 
-  // Effect for updating distance
+  // Effect for updating minDistance
   useEffect(() => {
-    if (constraintRef.current && distance !== undefined) {
-      constraintRef.current.distance = distance;
+    if (constraintRef.current && minDistance !== undefined) {
+      constraintRef.current.minDistance = minDistance;
     }
-  }, [distance]);
+  }, [minDistance]);
+
+  // Effect for updating maxDistance
+  useEffect(() => {
+    if (constraintRef.current && maxDistance !== undefined) {
+      constraintRef.current.maxDistance = maxDistance;
+    }
+  }, [maxDistance]);
 
   // Effect for updating style
   useEffect(() => {
