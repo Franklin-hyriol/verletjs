@@ -16,7 +16,7 @@ export default function InteractiveDemo() {
     stiffness: { value: 0.9, min: 0.1, max: 1, step: 0.05 },
     restitution: { value: 0.2, min: 0, max: 1, step: 0.05 },
     solverIterations: { value: 3, min: 1, max: 10, step: 1 },
-    pinMod: { label: "Pinning Interval", value: 5, min: 1, max: 50, step: 1 },
+    pinMod: { label: "Pinning Interval", value: 4, min: 1, max: 50, step: 1 },
     segmentsX: { label: "Segments X", value: 30, min: 5, max: 50, step: 1 },
     segmentsY: { label: "Segments Y", value: 20, min: 5, max: 50, step: 1 },
   });
