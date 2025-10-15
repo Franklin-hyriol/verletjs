@@ -1,20 +1,26 @@
-import { useEffect } from 'react';
-import { Vec2, Particle, Composite, PinConstraint } from 'verlet-engine';
+import { useEffect, useRef } from 'react';
+import { Vec2, Particle, Composite, PinConstraint, type ParticleStyle } from 'verlet-engine';
 import { useVerletContext } from '../../hooks/useVerletContext';
 
 interface PointProps {
   id: string;
   pos: Vec2;
   pinned?: boolean;
+  mass?: number;
+  style?: ParticleStyle;
 }
 
-export const Point: React.FC<PointProps> = ({ id, pos, pinned = false }) => {
+export const Point: React.FC<PointProps> = ({ id, pos, pinned = false, mass, style }) => {
   const { engine, registerParticle, unregisterParticle } = useVerletContext();
+  const particleRef = useRef<Particle | null>(null);
 
+  // Effect for creation and destruction
   useEffect(() => {
     if (!engine) return;
 
     const particle = new Particle(pos);
+    particleRef.current = particle;
+
     const composite = new Composite();
     composite.particles.push(particle);
 
@@ -32,8 +38,24 @@ export const Point: React.FC<PointProps> = ({ id, pos, pinned = false }) => {
       if (index > -1) {
         engine.composites.splice(index, 1);
       }
+      particleRef.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine, id, pos, pinned, registerParticle, unregisterParticle]);
+
+  // Effect for updating mass
+  useEffect(() => {
+    if (particleRef.current && mass !== undefined) {
+      particleRef.current.mass = mass;
+    }
+  }, [mass]);
+
+  // Effect for updating style
+  useEffect(() => {
+    if (particleRef.current && style) {
+      particleRef.current.style = style;
+    }
+  }, [style]);
 
   return null;
 };

@@ -9,11 +9,11 @@ export const CustomShapePage = () => {
       options={{ gravity: new Vec2(0, 0.5), friction: 0.99 }}
     >
       {/* Define the particles (points) with unique IDs */}
-      <Point id="p1" pos={new Vec2(200, 100)} pinned />
-      <Point id="p2" pos={new Vec2(250, 100)} />
-      <Point id="p3" pos={new Vec2(300, 100)} />
-      <Point id="p4" pos={new Vec2(350, 100)} />
-      <Point id="p5" pos={new Vec2(400, 100)} />
+      <Point id="p1" pos={new Vec2(200, 100)} pinned={true} mass={10} style={{ color: '#ff0000', radius: 8 }} />
+      <Point id="p2" pos={new Vec2(250, 100)} style={{ radius: 2 }} />
+      <Point id="p3" pos={new Vec2(300, 100)} style={{ radius: 2 }} />
+      <Point id="p4" pos={new Vec2(350, 100)} style={{ radius: 2 }} />
+      <Point id="p5" pos={new Vec2(400, 100)} style={{ radius: 2 }} />
 
       {/* Define the constraints that link the particles */}
       <DistanceConstraint from="p1" to="p2" />
