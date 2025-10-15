@@ -9,6 +9,7 @@ export default function InteractiveDemo() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [dragged, setDragged] = useState<Particle | null>(null);
+  const [isLevaCollapsed, setIsLevaCollapsed] = useState(window.innerWidth <= 768);
 
   const { gravity, friction, stiffness, restitution, solverIterations, pinMod, segmentsX, segmentsY } = useControls("Simulation", {
     gravity: { value: 0.5, min: -2, max: 2, step: 0.1 },
@@ -46,6 +47,18 @@ export default function InteractiveDemo() {
     };
   }, []);
 
+  // This effect handles the collapsed state of the Leva panel based on screen width.
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLevaCollapsed(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   // --- Mouse Interaction Handlers ---
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => {
     const canvas = event.currentTarget;
@@ -54,7 +67,7 @@ export default function InteractiveDemo() {
 
     let nearest: Particle | null = null;
     let min_dist_sq = Infinity;
-    const selectionRadius = 20;
+    const selectionRadius = 30;
 
     for (const c of composites) {
       for (const p of c.particles) {
@@ -145,7 +158,7 @@ export default function InteractiveDemo() {
 
   return (
     <>
-      <Leva collapsed={false} />
+      <Leva collapsed={isLevaCollapsed} />
       <div ref={containerRef} className={styles.canvaContainer}>
         {dimensions.width > 0 && (
           <VerletCanvas
@@ -160,7 +173,7 @@ export default function InteractiveDemo() {
           >
             <Cloth
               origin={clothOrigin}
-              width={dimensions.width * 0.8}
+              width={dimensions.width * 0.9}
               height={dimensions.height * 0.5}
               segmentsX={segmentsX}
               segmentsY={segmentsY}
