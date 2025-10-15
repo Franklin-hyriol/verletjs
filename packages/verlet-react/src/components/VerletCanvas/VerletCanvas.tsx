@@ -13,6 +13,8 @@ interface VerletCanvasProps extends Omit<React.CanvasHTMLAttributes<HTMLCanvasEl
   onCanvasMouseMove?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
   onCanvasMouseUp?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
   onCanvasMouseLeave?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  /** If provided, this function will be used to render the simulation instead of the default renderer. */
+  customRenderer?: (ctx: CanvasRenderingContext2D, composites: Composite[]) => void;
 }
 
 export const VerletCanvas: React.FC<VerletCanvasProps> = ({ 
@@ -25,6 +27,7 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
   onCanvasMouseMove,
   onCanvasMouseUp,
   onCanvasMouseLeave,
+  customRenderer,
   ...props 
 }) => {
   const { engine, composites } = useVerlet({ width, height, options });
@@ -51,6 +54,27 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
     };
   }, [engine, getParticleById, registerParticle, unregisterParticle]);
 
+  // This effect dynamically updates the engine's properties when the options prop changes.
+  useEffect(() => {
+    if (engine && options) {
+      if (options.gravity) {
+        engine.gravity = options.gravity;
+      }
+      if (typeof options.friction === 'number') {
+        engine.friction = options.friction;
+      }
+      if (typeof options.groundFriction === 'number') {
+        engine.groundFriction = options.groundFriction;
+      }
+      if (typeof options.solverIterations === 'number') {
+        engine.solverIterations = options.solverIterations;
+      }
+      if (typeof options.restitution === 'number') {
+        engine.restitution = options.restitution;
+      }
+    }
+  }, [engine, options]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !engine) return;
@@ -63,20 +87,27 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
         ctx.scale(dpr, dpr);
     }
     ctx.clearRect(0, 0, width, height);
-    for (const c of composites) {
-      for (const constraint of c.constraints as IConstraint[]) {
-        if (typeof constraint.draw === 'function') constraint.draw(ctx);
-      }
-      for (const p of c.particles) {
-        ctx.beginPath();
-        const radius = p.style?.radius || 2;
-        const color = p.style?.color || '#2dad8f';
-        ctx.arc(p.pos.x, p.pos.y, radius, 0, 2 * Math.PI);
-        ctx.fillStyle = color;
-        ctx.fill();
+
+    // Use the custom renderer if provided, otherwise fall back to the default renderer.
+    // This makes the component flexible while maintaining backward compatibility.
+    if (customRenderer) {
+      customRenderer(ctx, composites);
+    } else {
+      for (const c of composites) {
+        for (const constraint of c.constraints as IConstraint[]) {
+          if (typeof constraint.draw === 'function') constraint.draw(ctx);
+        }
+        for (const p of c.particles) {
+          ctx.beginPath();
+          const radius = p.style?.radius || 2;
+          const color = p.style?.color || '#2dad8f';
+          ctx.arc(p.pos.x, p.pos.y, radius, 0, 2 * Math.PI);
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
       }
     }
-  }, [composites, width, height, engine]);
+  }, [composites, width, height, engine, customRenderer]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseDown?.(e, composites);
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseMove?.(e, composites);
