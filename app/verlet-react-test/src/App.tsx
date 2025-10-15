@@ -3,6 +3,7 @@ import { LineSegmentsPage } from './pages/LineSegmentsPage';
 import { HomePage } from './pages/HomePage';
 import { Layout } from './components/Layout/Layout';
 import { CustomShapePage } from './pages/CustomShapePage';
+import { AdvancedShapesPage } from './pages/AdvancedShapesPage';
 
 function App() {
   return (
@@ -17,6 +18,9 @@ function App() {
 
          <Route path="/custom-shape">
             <CustomShapePage />
+          </Route>
+          <Route path="/advanced-shapes">
+            <AdvancedShapesPage />
           </Route>
       </Switch>
     </Layout>

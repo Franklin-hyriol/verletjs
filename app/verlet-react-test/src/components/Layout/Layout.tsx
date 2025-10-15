@@ -34,6 +34,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         >
           Custom Shape
         </NavLink>
+        <NavLink
+          to="/advanced-shapes"
+          className="text-gray-400 hover:text-white transition-colors"
+          activeStyle={activeLink}
+        >
+          Advanced Shapes
+        </NavLink>
       </nav>
       <main>{children}</main>
     </div>
