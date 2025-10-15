@@ -59,25 +59,30 @@ export default function InteractiveDemo() {
     };
   }, []);
 
-  // --- Mouse Interaction Handlers ---
-  const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => {
-    const canvas = event.currentTarget;
-    const rect = canvas.getBoundingClientRect();
-    const mousePos = new Vec2(event.clientX - rect.left, event.clientY - rect.top);
+  // --- Mouse and Touch Interaction Handlers ---
 
+  const findNearestParticle = (pos: Vec2, composites: Composite[]): Particle | null => {
     let nearest: Particle | null = null;
     let min_dist_sq = Infinity;
-    const selectionRadius = 30;
+    const selectionRadius = 20;
 
     for (const c of composites) {
       for (const p of c.particles) {
-        const dist_sq = p.pos.dist2(mousePos);
+        const dist_sq = p.pos.dist2(pos);
         if (dist_sq < min_dist_sq && dist_sq < selectionRadius * selectionRadius) {
           nearest = p;
           min_dist_sq = dist_sq;
         }
       }
     }
+    return nearest;
+  };
+
+  const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => {
+    const canvas = event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const mousePos = new Vec2(event.clientX - rect.left, event.clientY - rect.top);
+    const nearest = findNearestParticle(mousePos, composites);
     if (nearest) {
       setDragged(nearest);
     }
@@ -94,6 +99,34 @@ export default function InteractiveDemo() {
   }, [dragged]);
 
   const handleMouseUp = useCallback(() => {
+    setDragged(null);
+  }, []);
+
+  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLCanvasElement>, composites: Composite[]) => {
+    event.preventDefault();
+    if (event.touches.length > 0) {
+      const canvas = event.currentTarget;
+      const rect = canvas.getBoundingClientRect();
+      const touchPos = new Vec2(event.touches[0].clientX - rect.left, event.touches[0].clientY - rect.top);
+      const nearest = findNearestParticle(touchPos, composites);
+      if (nearest) {
+        setDragged(nearest);
+      }
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((event: React.TouchEvent<HTMLCanvasElement>) => {
+    event.preventDefault();
+    if (dragged && event.touches.length > 0) {
+      const canvas = event.currentTarget;
+      const rect = canvas.getBoundingClientRect();
+      const touchPos = new Vec2(event.touches[0].clientX - rect.left, event.touches[0].clientY - rect.top);
+      dragged.pos.x = touchPos.x;
+      dragged.pos.y = touchPos.y;
+    }
+  }, [dragged]);
+
+  const handleTouchEnd = useCallback(() => {
     setDragged(null);
   }, []);
 
@@ -169,6 +202,9 @@ export default function InteractiveDemo() {
             onCanvasMouseMove={handleMouseMove}
             onCanvasMouseUp={handleMouseUp}
             onCanvasMouseLeave={handleMouseUp}
+            onCanvasTouchStart={handleTouchStart}
+            onCanvasTouchMove={handleTouchMove}
+            onCanvasTouchEnd={handleTouchEnd}
             customRenderer={customClothRenderer}
           >
             <Cloth

@@ -3,7 +3,7 @@ import { VerletContext, type VerletContextType } from '../../context/VerletConte
 import { useVerlet } from '../../hooks/useVerlet';
 import { Composite, Particle, type VerletOptions, type IConstraint } from 'verlet-engine';
 
-interface VerletCanvasProps extends Omit<React.CanvasHTMLAttributes<HTMLCanvasElement>, 'onMouseDown' | 'onMouseMove' | 'onMouseUp' | 'onMouseLeave'> {
+interface VerletCanvasProps extends Omit<React.CanvasHTMLAttributes<HTMLCanvasElement>, 'onMouseDown' | 'onMouseMove' | 'onMouseUp' | 'onMouseLeave' | 'onTouchStart' | 'onTouchMove' | 'onTouchEnd'> {
   width: number;
   height: number;
   children?: React.ReactNode;
@@ -13,6 +13,9 @@ interface VerletCanvasProps extends Omit<React.CanvasHTMLAttributes<HTMLCanvasEl
   onCanvasMouseMove?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
   onCanvasMouseUp?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
   onCanvasMouseLeave?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasTouchStart?: (event: React.TouchEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasTouchMove?: (event: React.TouchEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasTouchEnd?: (event: React.TouchEvent<HTMLCanvasElement>, composites: Composite[]) => void;
   /** If provided, this function will be used to render the simulation instead of the default renderer. */
   customRenderer?: (ctx: CanvasRenderingContext2D, composites: Composite[]) => void;
 }
@@ -27,6 +30,9 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
   onCanvasMouseMove,
   onCanvasMouseUp,
   onCanvasMouseLeave,
+  onCanvasTouchStart,
+  onCanvasTouchMove,
+  onCanvasTouchEnd,
   customRenderer,
   ...props 
 }) => {
@@ -113,6 +119,9 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseMove?.(e, composites);
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseUp?.(e, composites);
   const handleMouseLeave = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseLeave?.(e, composites);
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => onCanvasTouchStart?.(e, composites);
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => onCanvasTouchMove?.(e, composites);
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => onCanvasTouchEnd?.(e, composites);
 
   if (!contextValue) return null;
 
@@ -127,6 +136,9 @@ export const VerletCanvas: React.FC<VerletCanvasProps> = ({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         {...props}
       />
       {children}
