@@ -23,7 +23,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import { Vec2 } from './vec2';
-import { DistanceConstraint, PinConstraint, AngleConstraint, CollisionConstraint, MinMaxDistanceConstraint } from './constraint';
+import { DistanceConstraint, PinConstraint, AngleConstraint, CollisionConstraint, MinMaxDistanceConstraint, PlaneConstraint } from './constraint';
 import type { ParticleStyle } from './types';
 
 
@@ -55,7 +55,7 @@ export class Particle {
  */
 export class Composite {
 	particles: Particle[] = [];
-	constraints: (DistanceConstraint | PinConstraint | AngleConstraint | CollisionConstraint | MinMaxDistanceConstraint)[] = [];
+	constraints: (DistanceConstraint | PinConstraint | AngleConstraint | CollisionConstraint | MinMaxDistanceConstraint | PlaneConstraint)[] = [];
 
 	/**
 	 * Pins a particle in the composite to a specific location.

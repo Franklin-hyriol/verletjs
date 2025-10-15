@@ -31,6 +31,7 @@ import type { ConstraintStyle } from './types';
  * Constrains two particles to a specific distance from each other.
  */
 export class DistanceConstraint {
+	type = 'DistanceConstraint';
 	/** The first particle. */
 	a: Particle;
 	/** The second particle. */
@@ -95,6 +96,7 @@ export class DistanceConstraint {
  * Constrains two particles to prevent them from overlapping.
  */
 export class CollisionConstraint {
+	type = 'CollisionConstraint';
 	/** The first particle. */
 	a: Particle;
 	/** The second particle. */
@@ -162,6 +164,7 @@ export class CollisionConstraint {
  * Constrains a particle to a fixed point in space.
  */
 export class PinConstraint {
+	type = 'PinConstraint';
 	/** The particle to be pinned. */
 	a: Particle;
 	/** The fixed point in space where the particle is pinned. */
@@ -202,6 +205,7 @@ export class PinConstraint {
  * Constrains the angle between three particles.
  */
 export class AngleConstraint {
+	type = 'AngleConstraint';
 	/** The first particle of the angle. */
 	a: Particle;
 	/** The center particle (the vertex of the angle). */
@@ -271,6 +275,7 @@ export class AngleConstraint {
  * Constrains two particles to a specific distance from each other.
  */
 export class MinMaxDistanceConstraint {
+	type = 'MinMaxDistanceConstraint';
 	/** The first particle. */
 	a: Particle;
 	/** The second particle. */
@@ -334,6 +339,7 @@ export class MinMaxDistanceConstraint {
  * Constrains the angle between three particles to a specific range.
  */
 export class MinMaxAngleConstraint {
+	type = 'MinMaxAngleConstraint';
 	/** The first particle of the angle. */
 	a: Particle;
 	/** The center particle (the vertex of the angle). */
@@ -417,22 +423,27 @@ export class MinMaxAngleConstraint {
  * A constraint that forces a particle to stay on one side of a plane (a line in 2D).
  */
 export class PlaneConstraint {
+  type = 'PlaneConstraint';
   /** The particle to be constrained. */
   a: Particle;
   /** A point on the plane. */
   origin: Vec2;
   /** The normal vector of the plane (points to the allowed side). */
   normal: Vec2;
+  /** Optional style for rendering */
+  style?: ConstraintStyle;
 
   /**
    * @param a The particle to be constrained.
    * @param origin A point on the plane.
    * @param normal The normal vector of the plane.
+   * @param style Optional style for rendering.
    */
-  constructor(a: Particle, origin: Vec2, normal: Vec2) {
+  constructor(a: Particle, origin: Vec2, normal: Vec2, style?: ConstraintStyle) {
     this.a = a;
     this.origin = origin;
     this.normal = normal.normal(); // Ensure it's a unit vector
+    this.style = style;
   }
 
   /**
@@ -462,8 +473,8 @@ export class PlaneConstraint {
     ctx.beginPath();
     ctx.moveTo(p1.x, p1.y);
     ctx.lineTo(p2.x, p2.y);
-    ctx.strokeStyle = '#c44dff';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = this.style?.color || '#c44dff';
+    ctx.lineWidth = this.style?.lineWidth || 2;
     ctx.stroke();
   }
 }
