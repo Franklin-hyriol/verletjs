@@ -4,104 +4,126 @@ sidebar_position: 5
 
 # Rendering
 
-Once your simulation is running, the next step is to visualize it. The way you render the simulation depends on whether you are using `verlet-engine` or `verlet-react`.
+Once your simulation is running, you need to draw it on the screen. Both `verlet-engine` and `verlet-react` use the HTML5 Canvas API for rendering, but they approach it differently.
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
+## Default Rendering
+
+For many cases, the default, built-in rendering is all you need.
+
 <Tabs groupId="lang">
   <TabItem value="react" label="React">
 
-  In `verlet-react`, rendering is handled for you automatically by the `<VerletCanvas>` component.
-
-  `<VerletCanvas>` creates an HTML5 `<canvas>` element and a `VerletJS` simulation instance. It then automatically renders all the child components (like `<LineSegments>`, `<Cloth>`, etc.) on every frame.
+  The `<VerletCanvas>` component handles rendering **automatically**. It finds all particles and constraints in your simulation and draws them with a default style. This is the easiest way to get started.
 
   ```jsx
-  import { VerletCanvas, LineSegments } from 'verlet-react';
-  import { Vec2 } from 'verlet-engine';
-
-  const App = () => {
-    return (
-      // This component does all the work:
-      // 1. Creates a simulation
-      // 2. Creates a <canvas>
-      // 3. Runs the animation loop
-      // 4. Renders all objects
-      <VerletCanvas width={500} height={500}>
-        <LineSegments
-          vertices={[
-            new Vec2(100, 100),
-            new Vec2(200, 100),
-            new Vec2(300, 100),
-          ]}
-        />
-      </VerletCanvas>
-    );
-  };
+  // The points and constraints are drawn automatically.
+  <VerletCanvas width={600} height={400}>
+    <Point id="p1" pos={new Vec2(200, 100)} pinned />
+    <Point id="p2" pos={new Vec2(300, 100)} />
+    <DistanceConstraint from="p1" to="p2" />
+  </VerletCanvas>
   ```
-
-  You can customize the appearance of the objects by passing style props to the components.
+  You can customize the appearance by passing a `style` prop to `<Point>` and constraint components.
 
   </TabItem>
   <TabItem value="js" label="JavaScript">
 
-  With `verlet-engine`, you are in full control of the rendering. The library only handles the physics; it does not draw anything on its own.
-
-  The standard way to render is to use an HTML5 `<canvas>`. In your animation loop, after you update the simulation, you can clear the canvas and then loop through all the objects to draw them.
-
-  Here is a complete example:
-
-  ```html
-  <canvas id="canvas" width="500" height="500"></canvas>
-  ```
+  With `verlet-engine`, there is **no default renderer**. You are always in complete control of the drawing process. You need to get a canvas 2D context and write your own rendering logic inside the animation loop.
 
   ```javascript
-  import { VerletJS, Vec2 } from 'verlet-engine';
-  import { lineSegments } from 'verlet-engine/objects';
-
-  const canvas = document.getElementById('canvas');
+  const canvas = document.getElementById('my-canvas');
   const ctx = canvas.getContext('2d');
 
-  const sim = new VerletJS(500, 500);
-
-  const vertices = [
-    new Vec2(100, 100),
-    new Vec2(200, 100),
-    new Vec2(300, 100),
-  ];
-  lineSegments(sim, vertices, 1);
-
   function animate() {
-    // 1. Update the simulation
-    sim.frame(16);
+    sim.frame(); // Update physics
 
-    // 2. Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 3. Draw the simulation objects
     for (const c of sim.composites) {
-      // Draw constraints
+      // Draw constraints that have a `draw` method
       for (const constraint of c.constraints) {
-        if (constraint.draw) {
+        if (typeof constraint.draw === 'function') {
           constraint.draw(ctx);
         }
       }
       // Draw particles
       for (const p of c.particles) {
         ctx.beginPath();
-        ctx.arc(p.pos.x, p.pos.y, 2, 0, 2 * Math.PI);
-        ctx.fillStyle = '#2dad8f';
+        ctx.arc(p.pos.x, p.pos.y, 5, 0, 2 * Math.PI);
         ctx.fill();
       }
     }
 
     requestAnimationFrame(animate);
   }
-
-  animate();
   ```
-  
-  Notice that both `Particle` and `Constraint` objects have a `draw(ctx)` method that you can use for convenience.
+
+  </TabItem>
+</Tabs>
+
+## Custom Rendering
+
+If you need more control over the appearance of your simulation, you can provide a custom rendering function.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  The `<VerletCanvas>` component accepts a `customRenderer` prop. This function gives you direct access to the canvas `ctx` and the array of `composites` on every frame. When you provide this prop, the default renderer is **disabled**.
+
+  ```jsx
+  import React from 'react';
+  import { VerletCanvas, Point } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const myCustomRenderer = (ctx, composites) => {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
+    ctx.fillStyle = 'red';
+    for (const c of composites) {
+      for (const p of c.particles) {
+        // Draw all particles as red squares
+        ctx.fillRect(p.pos.x - 5, p.pos.y - 5, 10, 10);
+      }
+    }
+  };
+
+  const App = () => {
+    return (
+      <VerletCanvas width={600} height={400} customRenderer={myCustomRenderer}>
+        <Point id="p1" pos={new Vec2(300, 200)} />
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  As mentioned before, you are always in control of rendering. To create a "custom" renderer, you simply change the drawing logic inside your `animate` function. This gives you unlimited flexibility to draw your simulation however you like, for example using WebGL or another rendering library.
+
+  ```javascript
+  // Example of custom logic inside the animate function:
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = 'blue';
+  ctx.lineWidth = 2;
+
+  for (const c of sim.composites) {
+    // Custom: only draw the constraints, not the particles
+    for (const constraint of c.constraints) {
+      if (constraint instanceof DistanceConstraint) {
+        ctx.beginPath();
+        ctx.moveTo(constraint.a.pos.x, constraint.a.pos.y);
+        ctx.lineTo(constraint.b.pos.x, constraint.b.pos.y);
+        ctx.stroke();
+      }
+    }
+  }
+  ```
 
   </TabItem>
 </Tabs>

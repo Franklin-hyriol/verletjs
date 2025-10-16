@@ -4,296 +4,141 @@ sidebar_position: 2
 
 # Constraints
 
-Particles on their own are not very interesting. Constraints are what bring them to life.
-
-A constraint is a rule that particles must follow. The most common type is the **Distance Constraint**, which forces two particles to remain at a fixed distance from each other. By connecting multiple particles with distance constraints, you can create any shape you can imagine, from simple ropes to complex cloth simulations.
+Constraints are rules that define the relationships between particles. They are the core mechanism for building structures. This page introduces the main constraints available.
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-## Distance Constraint
+## DistanceConstraint
+
+Forces two particles to maintain a specific distance from each other. This is the most common constraint.
 
 <Tabs groupId="lang">
   <TabItem value="react" label="React">
-
-  In `verlet-react`, you typically don't work with individual constraints directly. Instead, you use higher-level components that manage constraints for you.
-
-  For example, the `<LineSegments>` component creates a chain of particles connected by distance constraints.
-
   ```jsx
-  import { VerletCanvas, LineSegments } from 'verlet-react';
-  import { Vec2 } from 'verlet-engine';
-
-  const App = () => {
-    return (
-      <VerletCanvas>
-        {/* This creates 5 points and connects them with 4 distance constraints */}
-        <LineSegments
-          vertices={[
-            new Vec2(100, 100),
-            new Vec2(200, 100),
-            new Vec2(300, 100),
-            new Vec2(400, 100),
-            new Vec2(500, 100),
-          ]}
-        />
-      </VerletCanvas>
-    );
-  };
+  <DistanceConstraint from="p1" to="p2" />
   ```
-  This approach makes it easier to build complex structures without worrying about the underlying constraint system.
-
   </TabItem>
   <TabItem value="js" label="JavaScript">
-
-  In `verlet-engine`, you can create constraints manually. The most common one is `DistanceConstraint`.
-
   ```javascript
-  import { VerletJS, Particle, DistanceConstraint, Vec2 } from 'verlet-engine';
-
-  const sim = new VerletJS(500, 500);
-
-  const p1 = new Particle(new Vec2(100, 100));
-  const p2 = new Particle(new Vec2(200, 100));
-
-  // A constraint that keeps p1 and p2 at 100px distance
-  const constraint = new DistanceConstraint(p1, p2, 1, 100);
-
-  const composite = {
-    particles: [p1, p2],
-    constraints: [constraint],
-  };
-
-  sim.composites.push(composite);
+  const constraint = new DistanceConstraint(p1, p2);
+  sim.addConstraint(constraint);
   ```
-
   </TabItem>
 </Tabs>
 
-## Pin Constraint
+## CollisionConstraint
 
-A Pin Constraint is used to fix a particle to a specific point in space. This is useful for creating anchor points, pivots, or for attaching objects to the world.
-
-<Tabs groupId="lang">
-  <TabItem value="react" label="React">
-
-  The `<Point>` component has a `pinned` prop that creates a Pin Constraint on the particle.
-
-  ```jsx
-  import { VerletCanvas, Point, LineSegments } from 'verlet-react';
-  import { Vec2 } from 'verlet-engine';
-
-  const App = () => {
-    return (
-      <VerletCanvas>
-        {/* A line segment where the first point is pinned */}
-        <LineSegments
-          vertices={[
-            new Vec2(250, 100),
-            new Vec2(350, 100),
-          ]}
-        >
-          <Point index={0} pinned={true} />
-        </LineSegments>
-      </VerletCanvas>
-    );
-  };
-  ```
-
-  </TabItem>
-  <TabItem value="js" label="JavaScript">
-
-  You can create a `PinConstraint` by providing a particle and the position where it should be pinned.
-
-  ```javascript
-  import { VerletJS, Particle, PinConstraint, Vec2 } from 'verlet-engine';
-
-  const sim = new VerletJS(500, 500);
-
-  const p1 = new Particle(new Vec2(250, 100));
-  
-  // A constraint that pins p1 to its initial position
-  const pin = new PinConstraint(p1, p1.pos);
-
-  const composite = {
-    particles: [p1],
-    constraints: [pin],
-  };
-
-  sim.composites.push(composite);
-  ```
-
-  </TabItem>
-</Tabs>
-
-## Angle Constraint
-
-An Angle Constraint maintains a specific angle between three particles. It's essential for creating rigid corners or flexible joints that bend but don't collapse.
+Prevents two particles from overlapping, based on their `style.radius`.
 
 <Tabs groupId="lang">
   <TabItem value="react" label="React">
-
-  `verlet-react` does not have a dedicated component for angle constraints. However, you can create a custom component to add them manually using the `useVerlet` hook.
-
   ```jsx
-  import { useVerlet } from 'verlet-react';
-  import { AngleConstraint } from 'verlet-engine';
-  import { useEffect } from 'react';
-
-  const CustomAngle = ({ p1, p2, p3, stiffness }) => {
-    const { sim } = useVerlet();
-
-    useEffect(() => {
-      if (p1 && p2 && p3) {
-        const constraint = new AngleConstraint(p1, p2, p3, stiffness);
-        sim.addConstraint(constraint);
-        return () => sim.removeConstraint(constraint);
-      }
-    }, [sim, p1, p2, p3, stiffness]);
-
-    return null; // This component does not render anything
-  };
+  <Point id="p1" pos={new Vec2(240, 100)} style={{ radius: 20 }} />
+  <Point id="p2" pos={new Vec2(260, 100)} style={{ radius: 20 }} />
+  <CollisionConstraint from="p1" to="p2" />
   ```
-
   </TabItem>
   <TabItem value="js" label="JavaScript">
-
-  An `AngleConstraint` is created with three particles (a, b, c) and a stiffness value. The angle maintained is the one initially formed by the three points, with `b` as the vertex.
-
   ```javascript
-  import { VerletJS, Particle, AngleConstraint, Vec2 } from 'verlet-engine';
-
-  const sim = new VerletJS(500, 500);
-
-  const p1 = new Particle(new Vec2(100, 100));
-  const p2 = new Particle(new Vec2(200, 100)); // The vertex
-  const p3 = new Particle(new Vec2(200, 200));
-
-  // A constraint to maintain the initial 90-degree angle
-  const angleConstraint = new AngleConstraint(p1, p2, p3, 0.1);
-
-  const composite = {
-    particles: [p1, p2, p3],
-    constraints: [angleConstraint],
-  };
-
-  sim.composites.push(composite);
-  ```
-
-  </TabItem>
-</Tabs>
-
-## Collision Constraint
-
-This constraint prevents two particles from overlapping. It works by checking the distance between two particles and ensuring it's greater than the sum of their radii.
-
-<Tabs groupId="lang">
-  <TabItem value="react" label="React">
-
-  Similar to the Angle Constraint, there is no built-in component for collisions. You can create a custom component to handle collisions between specific particles.
-
-  ```jsx
-  import { useVerlet } from 'verlet-react';
-  import { CollisionConstraint } from 'verlet-engine';
-  import { useEffect } from 'react';
-
-  const CustomCollision = ({ p1, p2, stiffness }) => {
-    const { sim } = useVerlet();
-
-    useEffect(() => {
-      if (p1 && p2) {
-        const constraint = new CollisionConstraint(p1, p2, stiffness);
-        sim.addConstraint(constraint);
-        return () => sim.removeConstraint(constraint);
-      }
-    }, [sim, p1, p2, stiffness]);
-
-    return null;
-  };
-  ```
-
-  </TabItem>
-  <TabItem value="js" label="JavaScript">
-
-  A `CollisionConstraint` only needs two particles and a stiffness value. The collision radius is taken from the `radius` property of each particle's style.
-
-  ```javascript
-  import { VerletJS, Particle, CollisionConstraint, Vec2 } from 'verlet-engine';
-
-  const sim = new VerletJS(500, 500);
-
   const p1 = new Particle(new Vec2(240, 100));
   p1.style.radius = 20;
-
   const p2 = new Particle(new Vec2(260, 100));
   p2.style.radius = 20;
-
-  // A constraint to make p1 and p2 collide
   const collision = new CollisionConstraint(p1, p2, 1);
-
-  const composite = {
-    particles: [p1, p2],
-    constraints: [collision],
-  };
-
-  sim.composites.push(composite);
+  sim.addConstraint(collision);
   ```
-
   </TabItem>
 </Tabs>
 
-## Min/Max Distance Constraint
+## PinConstraint
 
-This is a variation of the `DistanceConstraint`. It allows you to define a minimum and a maximum distance between two particles, creating a rigid stick that can't be stretched or compressed beyond these limits.
+Fixes a particle to a specific point in space. This is useful for creating anchor points.
 
 <Tabs groupId="lang">
   <TabItem value="react" label="React">
-
-  This constraint is also highly specific and is best implemented with a custom component using the `useVerlet` hook.
-
+  *This is achieved via the `pinned` prop on the `<Point>` component.*
   ```jsx
-  import { useVerlet } from 'verlet-react';
-  import { MinMaxDistanceConstraint } from 'verlet-engine';
-  import { useEffect } from 'react';
-
-  const CustomMinMax = ({ p1, p2, min, max, stiffness }) => {
-    const { sim } = useVerlet();
-
-    useEffect(() => {
-      if (p1 && p2) {
-        const constraint = new MinMaxDistanceConstraint(p1, p2, min, max, stiffness);
-        sim.addConstraint(constraint);
-        return () => sim.removeConstraint(constraint);
-      }
-    }, [sim, p1, p2, min, max, stiffness]);
-
-    return null;
-  };
+  <Point id="anchor" pos={new Vec2(250, 100)} pinned />
   ```
-
   </TabItem>
   <TabItem value="js" label="JavaScript">
-
-  You can create a `MinMaxDistanceConstraint` by providing two particles, a minimum distance, a maximum distance, and a stiffness value.
-
   ```javascript
-  import { VerletJS, Particle, MinMaxDistanceConstraint, Vec2 } from 'verlet-engine';
-
-  const sim = new VerletJS(500, 500);
-
-  const p1 = new Particle(new Vec2(200, 100));
-  const p2 = new Particle(new Vec2(300, 100));
-
-  // A constraint that keeps p1 and p2 between 50px and 150px apart
-  const minMax = new MinMaxDistanceConstraint(p1, p2, 50, 150, 1);
-
-  const composite = {
-    particles: [p1, p2],
-    constraints: [minMax],
-  };
-
-  sim.composites.push(composite);
+  const pin = new PinConstraint(p1, p1.pos);
+  sim.addConstraint(pin);
   ```
-
   </TabItem>
 </Tabs>
+
+## AngleConstraint
+
+Maintains the initial angle between three particles.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <AngleConstraint from="p1" center="p2" to="p3" stiffness={0.1} />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const angleConstraint = new AngleConstraint(p1, p2, p3, 0.1);
+  sim.addConstraint(angleConstraint);
+  ```
+  </TabItem>
+</Tabs>
+
+## MinMaxDistanceConstraint
+
+Keeps the distance between two particles within a certain range.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <MinMaxDistanceConstraint from="p1" to="p2" minDistance={50} maxDistance={150} />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const minMax = new MinMaxDistanceConstraint(p1, p2, 50, 150, 1);
+  sim.addConstraint(minMax);
+  ```
+  </TabItem>
+</Tabs>
+
+## MinMaxAngleConstraint
+
+Keeps the angle between three particles within a specific range in radians.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <MinMaxAngleConstraint from="p1" center="p2" to="p3" minAngle={Math.PI/2} maxAngle={Math.PI} />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const joint = new MinMaxAngleConstraint(p1, p2, p3, Math.PI/2, Math.PI, 1);
+  sim.addConstraint(joint);
+  ```
+  </TabItem>
+</Tabs>
+
+## PlaneConstraint
+
+Forces a particle to stay on one side of an infinite plane (a line in 2D).
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <PlaneConstraint particle="ball" origin={new Vec2(0, 300)} normal={new Vec2(0, -1)} />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const floor = new PlaneConstraint(ball, new Vec2(0, 300), new Vec2(0, -1));
+  sim.addConstraint(floor);
+  ```
+  </TabItem>
+</Tabs>
+

@@ -2,75 +2,89 @@
 sidebar_position: 1
 ---
 
-# Particle
+# Particle & Point
 
-The `Particle` class is the fundamental building block of any simulation. It represents a single point in space with mass.
+The `Particle` class is the fundamental building block of any simulation. The `<Point>` component is its declarative React counterpart.
 
-## Constructor
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-### `new Particle(pos, [mass])`
+<Tabs groupId="lang">
+  <TabItem value="js" label="Particle (JavaScript)">
 
-Creates a new `Particle` instance.
+  A `Particle` represents a single point in space with mass.
 
-#### Parameters
+  ## Constructor
 
-- `pos` ([`Vec2`](/docs/api-reference/vec2)): The initial position of the particle.
-- `mass` (number, optional): The mass of the particle. Defaults to `1`. A mass of `0` is treated as infinite, making the particle immovable.
+  ### `new Particle(pos, [mass])`
 
-#### Example
+  - `pos` ([`Vec2`](/docs/api-reference/vec2)): The initial position.
+  - `mass` (number, optional): The mass of the particle. Defaults to `1`.
 
-```javascript
-import { Particle, Vec2 } from 'verlet-engine';
+  #### Example
+  ```javascript
+  import { Particle, Vec2 } from 'verlet-engine';
 
-const p = new Particle(new Vec2(100, 100));
-```
+  // A particle with default mass of 1
+  const p1 = new Particle(new Vec2(100, 100));
 
----
+  // A heavier particle
+  const p2 = new Particle(new Vec2(200, 100), 5.0);
+  ```
 
-## Properties
+  ## Properties
 
-### `pos`
+  - `pos` (Vec2): The current position vector.
+  - `lastPos` (Vec2): The position vector in the previous frame.
+  - `acc` (Vec2): The acceleration vector, where forces are accumulated.
+  - `mass` (number): The mass of the particle.
+  - `style` (ParticleStyle, optional): An object for rendering style (`{ radius, color, hidden }`).
 
-- **Type:** [`Vec2`](/docs/api-reference/vec2)
+  </TabItem>
+  <TabItem value="react" label="Point (React)">
 
-The current position vector of the particle. You can modify this property directly to teleport the particle, but for physics-based movement, you should let the simulation handle it.
+  The `<Point>` component creates a single particle in the simulation.
 
----
+  ## Props
 
-### `lastPos`
+  ### `id`
+  - **Type**: `string` (required)
+  
+  A unique identifier for the particle. This is crucial for connecting constraints to it.
 
-- **Type:** [`Vec2`](/docs/api-reference/vec2)
+  ### `pos`
+  - **Type**: [`Vec2`](/docs/api-reference/vec2) (required)
 
-The position vector of the particle in the previous frame. The simulation uses this to calculate the particle's velocity (`velocity = pos - lastPos`).
+  The initial position of the particle.
 
----
+  ### `pinned`
+  - **Type**: `boolean` (optional)
 
-### `acc`
+  If `true`, the particle will be fixed in place, creating a `PinConstraint`. Defaults to `false`.
 
-- **Type:** [`Vec2`](/docs/api-reference/vec2)
+  ### `mass`
+  - **Type**: `number` (optional)
 
-The acceleration vector of the particle. This is where forces (like gravity) are accumulated before being applied to the particle's position. It is typically reset to `(0, 0)` at the end of each frame.
+  The mass of the particle. Defaults to `1`.
 
----
+  ### `style`
+  - **Type**: `ParticleStyle` (optional)
 
-### `mass`
+  An object to define the rendering style: `{ radius, color, hidden }`.
 
-- **Type:** `number`
+  ### Example
 
-The mass of the particle. This influences how the particle reacts to forces and constraints. A higher mass means the particle is "heavier" and less affected by lighter particles.
+  ```jsx
+  import { Point } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
 
----
+  <Point 
+    id="p1"
+    pos={new Vec2(100, 100)}
+    pinned
+    style={{ color: 'red', radius: 10 }}
+  />
+  ```
 
-### `style`
-
-- **Type:** `ParticleStyle` (optional)
-
-An object used to define the rendering style of the particle. This is not used by `verlet-engine` itself but can be used by your rendering logic or by libraries like `verlet-react`.
-
-```typescript
-interface ParticleStyle {
-  radius?: number;
-  color?: string;
-  hidden?: boolean;
-}
-```
+  </TabItem>
+</Tabs>

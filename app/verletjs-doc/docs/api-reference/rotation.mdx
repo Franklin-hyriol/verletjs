@@ -1,0 +1,48 @@
+---
+sidebar_position: 6
+---
+
+# Rotation
+
+`verlet-engine` provides helper functions to rotate particles and composites around a center point. These functions are mutable, meaning they directly modify the `pos` and `lastPos` of the particles.
+
+## `rotateParticle`
+
+Rotates a single particle around a center point.
+
+### Signature
+`rotateParticle(particle, center, angle)`
+
+- `particle` (Particle): The particle to rotate.
+- `center` (Vec2): The center point of rotation.
+- `angle` (number): The angle of rotation in radians.
+
+### Example
+```javascript
+import { rotateParticle } from 'verlet-engine';
+
+// Rotate myParticle by 45 degrees around the origin
+rotateParticle(myParticle, new Vec2(0, 0), Math.PI / 4);
+```
+
+---
+
+## `rotateComposite`
+
+Rotates all particles within a composite around a center point.
+
+### Signature
+`rotateComposite(composite, center, angle)`
+
+- `composite` (Composite): The composite to rotate.
+- `center` (Vec2): The center point of rotation.
+- `angle` (number): The angle of rotation in radians.
+
+### Example
+```javascript
+import { rotateComposite } from 'verlet-engine';
+
+// Rotate myComposite by 90 degrees around its first particle
+const centerPoint = myComposite.particles[0].pos;
+rotateComposite(myComposite, centerPoint, Math.PI / 2);
+```
