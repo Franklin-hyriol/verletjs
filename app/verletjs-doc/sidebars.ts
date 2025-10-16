@@ -29,6 +29,7 @@ const sidebars: SidebarsConfig = {
     },
     'simulation',
     'rendering',
+    'interaction',
     {
       type: 'category',
       label: 'API Reference',

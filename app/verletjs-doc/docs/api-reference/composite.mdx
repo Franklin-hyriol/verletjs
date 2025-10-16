@@ -2,84 +2,102 @@
 sidebar_position: 5
 ---
 
-# Composite
+# Composites & Objects
 
-A `Composite` is a container for a group of `Particle` and `Constraint` objects that should be treated as a single entity. It is the primary way to add objects to the `VerletJS` simulation.
+This section covers both the low-level `Composite` class and the high-level helper functions and React components used to create common shapes.
 
-## Constructor
+## The `Composite` Class
 
-### `new Composite()`
+A `Composite` is a container for a group of `Particle` and `Constraint` objects. It is the primary way to group objects in the simulation.
 
-Creates a new, empty `Composite` instance.
+### Properties
+- `particles` (Particle[]): An array of particles in the composite.
+- `constraints` (Constraint[]): An array of constraints in the composite.
 
-#### Example
-
-```javascript
-import { Composite } from 'verlet-engine';
-
-const myObject = new Composite();
-```
+### Methods
+- `pin(index, [pos])`: A convenience method to create a `PinConstraint` for a particle within the composite.
 
 ---
 
-## Properties
+## High-Level Objects
 
-### `particles`
+These are helpers that create and add pre-made composites to the simulation.
 
-- **Type:** `Particle[]`
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-An array containing all the `Particle` instances in this composite.
+### Line Segments
 
-#### Example
+Creates a chain of particles connected by distance constraints.
 
-```javascript
-import { Particle, Vec2 } from 'verlet-engine';
+<Tabs groupId="lang">
+<TabItem value="js" label="lineSegments()">
 
-myObject.particles.push(new Particle(new Vec2(100, 100)));
-```
+`lineSegments(sim, vertices, stiffness)`
+- `sim` (VerletJS): The simulation instance.
+- `vertices` (Vec2[]): An array of points for the line.
+- `stiffness` (number): The stiffness of the constraints.
 
----
+</TabItem>
+<TabItem value="react" label="<LineSegments />">
 
-### `constraints`
+- `vertices` (Vec2[]): An array of points for the line.
+- `stiffness` (number): The stiffness of the constraints.
+- `pins` (number[], optional): An array of particle indices to pin.
 
-- **Type:** `Constraint[]`
+</TabItem>
+</Tabs>
 
-An array containing all the `Constraint` instances that apply to the particles within this composite.
+### Cloth
 
-#### Example
+Creates a 2D grid of particles, ideal for fabric simulations.
 
-```javascript
-import { DistanceConstraint } from 'verlet-engine';
+<Tabs groupId="lang">
+<TabItem value="js" label="cloth()">
 
-const p1 = myObject.particles[0];
-const p2 = myObject.particles[1];
+`cloth(sim, origin, width, height, segmentsX, segmentsY, pinMod, stiffness)`
+- `sim` (VerletJS): The simulation instance.
+- `origin` (Vec2): The center point of the cloth.
+- `width` / `height` (number): The dimensions of the cloth.
+- `segmentsX` / `segmentsY` (number): The number of segments on each axis.
+- `pinMod` (number): A modifier for pinning particles on the top edge (e.g., `3` pins every 3rd particle).
+- `stiffness` (number): The stiffness of the constraints.
 
-myObject.constraints.push(new DistanceConstraint(p1, p2, 1));
-```
+</TabItem>
+<TabItem value="react" label="<Cloth />">
 
----
+- `origin` (Vec2): The center point of the cloth.
+- `width` / `height` (number): The dimensions of the cloth.
+- `segmentsX` / `segmentsY` (number): The number of segments on each axis.
+- `pinMod` (number): A modifier for pinning particles.
+- `stiffness` (number): The stiffness of the constraints.
 
-## Methods
+</TabItem>
+</Tabs>
 
-### `pin(index, [pos])`
+### Tire
 
-A convenience method to create a `PinConstraint` for a particle within the composite.
+Creates a circular object with spokes.
 
-#### Parameters
+<Tabs groupId="lang">
+<TabItem value="js" label="tire()">
 
-- `index` (number): The index of the particle to pin in the `particles` array.
-- `pos` ([`Vec2`](/docs/api-reference/vec2), optional): The position to pin the particle to. If not provided, the particle's current position is used.
+`tire(sim, origin, radius, segments, spokeStiffness, treadStiffness)`
+- `sim` (VerletJS): The simulation instance.
+- `origin` (Vec2): The center of the tire.
+- `radius` (number): The radius of the tire.
+- `segments` (number): The number of segments.
+- `spokeStiffness` (number): The stiffness of the spokes connecting to the center.
+- `treadStiffness` (number): The stiffness of the outer tread.
 
-#### Returns
+</TabItem>
+<TabItem value="react" label="<Tire />">
 
-- ([`PinConstraint`](/docs/api-reference/constraints#pinconstraint)): The created `PinConstraint` instance.
+- `origin` (Vec2): The center of the tire.
+- `radius` (number): The radius of the tire.
+- `segments` (number): The number of segments.
+- `spokeStiffness` (number): The stiffness of the spokes.
+- `treadStiffness` (number): The stiffness of the outer tread.
 
-#### Example
-
-```javascript
-// Pin the first particle of the composite to its current location
-myObject.pin(0);
-
-// Pin the second particle to a specific point
-myObject.pin(1, new Vec2(200, 100));
-```
+</TabItem>
+</Tabs>

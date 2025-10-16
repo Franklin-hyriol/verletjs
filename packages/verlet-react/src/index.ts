@@ -20,3 +20,6 @@ export { Tire } from './components/Tire/Tire';
 export { DistanceConstraint } from './components/DistanceConstraint/DistanceConstraint';
 export { AngleConstraint } from './components/AngleConstraint/AngleConstraint';
 export { PlaneConstraint } from './components/PlaneConstraint/PlaneConstraint';
+export { CollisionConstraint } from './components/CollisionConstraint/CollisionConstraint';
+export { MinMaxAngleConstraint } from './components/MinMaxAngleConstraint/MinMaxAngleConstraint';
+export { MinMaxDistanceConstraint } from './components/MinMaxDistanceConstraint/MinMaxDistanceConstraint';

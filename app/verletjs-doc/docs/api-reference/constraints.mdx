@@ -4,129 +4,184 @@ sidebar_position: 4
 
 # Constraints
 
-Constraints are rules that define the relationships between particles. They are the core mechanism for building structures like ropes, cloth, and rigid bodies. All constraints are added to the `constraints` array of a `Composite`.
+Constraints are rules that define the relationships between particles. They are the core mechanism for building structures. This page documents both the low-level JavaScript classes and their corresponding React components.
 
----
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 
 ## DistanceConstraint
 
-Forces two particles to maintain a specific distance from each other. This is the most common constraint, used for creating links, sticks, and the edges of shapes.
+Forces two particles to maintain a specific distance from each other.
 
-### Constructor
+<Tabs groupId="lang">
+<TabItem value="js" label="JS Class">
 
 #### `new DistanceConstraint(a, b, stiffness, [distance])`
+- `a`, `b` (Particle): The two particles to constrain.
+- `stiffness` (number): The rigidity of the constraint (0 to 1).
+- `distance` (number, optional): The distance to maintain. Defaults to the initial distance.
 
-- `a` ([`Particle`](/docs/api-reference/particle)): The first particle.
-- `b` ([`Particle`](/docs/api-reference/particle)): The second particle.
-- `stiffness` (number): A value from `0.0` to `1.0` that defines how rigid the constraint is.
-- `distance` (number, optional): The distance to maintain. If not provided, the initial distance between the particles is used.
+</TabItem>
+<TabItem value="react" label="React Component">
 
-### Example
+#### `<DistanceConstraint from to [stiffness] [distance] />`
+- `from`, `to` (string): The `id`s of the two `<Point>` components to constrain.
+- `stiffness` (number, optional): The rigidity of the constraint.
+- `distance` (number, optional): The distance to maintain.
 
-```javascript
-const p1 = new Particle(new Vec2(100, 100));
-const p2 = new Particle(new Vec2(200, 100));
-
-// Keep p1 and p2 100px apart with medium stiffness
-const constraint = new DistanceConstraint(p1, p2, 0.5, 100);
-```
+</TabItem>
+</Tabs>
 
 ---
 
 ## PinConstraint
 
-Fixes a particle to a specific point in space, making it immovable. This is useful for creating anchor points or pivots.
+Fixes a particle to a specific point in space.
 
-### Constructor
+<Tabs groupId="lang">
+<TabItem value="js" label="JS Class">
 
 #### `new PinConstraint(a, pos)`
+- `a` (Particle): The particle to pin.
+- `pos` (Vec2): The position to pin the particle to.
 
-- `a` ([`Particle`](/docs/api-reference/particle)): The particle to pin.
-- `pos` ([`Vec2`](/docs/api-reference/vec2)): The position to pin the particle to.
+*Note: In React, this is achieved via the `pinned` prop on the `<Point>` component.*
 
-### Example
-
-```javascript
-const p1 = new Particle(new Vec2(250, 100));
-
-// Pin p1 to its current location
-const pin = new PinConstraint(p1, p1.pos);
-```
+</TabItem>
+</Tabs>
 
 ---
 
 ## AngleConstraint
 
-Maintains a specific angle between three particles. It's essential for creating rigid corners or flexible joints.
+Maintains the initial angle between three particles.
 
-### Constructor
+<Tabs groupId="lang">
+<TabItem value="js" label="JS Class">
 
 #### `new AngleConstraint(a, b, c, stiffness)`
-
-- `a` ([`Particle`](/docs/api-reference/particle)): The first particle of the angle.
-- `b` ([`Particle`](/docs/api-reference/particle)): The center particle (the vertex of the angle).
-- `c` ([`Particle`](/docs/api-reference/particle)): The third particle of the angle.
+- `a`, `b`, `c` (Particle): The three particles, where `b` is the vertex of the angle.
 - `stiffness` (number): The rigidity of the constraint.
 
-### Example
+</TabItem>
+<TabItem value="react" label="React Component">
 
-```javascript
-const p1 = new Particle(new Vec2(100, 100));
-const p2 = new Particle(new Vec2(200, 100)); // Vertex
-const p3 = new Particle(new Vec2(200, 200));
+#### `<AngleConstraint from center to [stiffness] />`
+- `from`, `center`, `to` (string): The `id`s of the three `<Point>` components, where `center` is the vertex.
+- `stiffness` (number, optional): The rigidity of the constraint.
 
-// Maintain the initial 90-degree angle
-const angle = new AngleConstraint(p1, p2, p3, 0.1);
-```
-
----
-
-## CollisionConstraint
-
-Prevents two particles from overlapping. The collision is based on the `radius` property defined in each particle's `style`.
-
-### Constructor
-
-#### `new CollisionConstraint(a, b, stiffness)`
-
-- `a` ([`Particle`](/docs/api-reference/particle)): The first particle.
-- `b` ([`Particle`](/docs/api-reference/particle)): The second particle.
-- `stiffness` (number): The rigidity of the collision response.
-
-### Example
-
-```javascript
-const p1 = new Particle(new Vec2(240, 100));
-p1.style = { radius: 20 };
-
-const p2 = new Particle(new Vec2(260, 100));
-p2.style = { radius: 20 };
-
-const collision = new CollisionConstraint(p1, p2, 1);
-```
+</TabItem>
+</Tabs>
 
 ---
 
 ## MinMaxDistanceConstraint
 
-A variation of `DistanceConstraint` that keeps the distance between two particles within a minimum and maximum range.
+Keeps the distance between two particles within a minimum and maximum range.
 
-### Constructor
+<Tabs groupId="lang">
+<TabItem value="js" label="JS Class">
 
 #### `new MinMaxDistanceConstraint(a, b, minDistance, maxDistance, stiffness)`
-
-- `a` ([`Particle`](/docs/api-reference/particle)): The first particle.
-- `b` ([`Particle`](/docs/api-reference/particle)): The second particle.
-- `minDistance` (number): The minimum allowed distance.
-- `maxDistance` (number): The maximum allowed distance.
+- `a`, `b` (Particle): The two particles.
+- `minDistance`, `maxDistance` (number): The allowed range.
 - `stiffness` (number): The rigidity of the constraint.
 
-### Example
+</TabItem>
+<TabItem value="react" label="React Component">
 
-```javascript
-const p1 = new Particle(new Vec2(200, 100));
-const p2 = new Particle(new Vec2(300, 100));
+#### `<MinMaxDistanceConstraint from to minDistance maxDistance [stiffness] />`
+- `from`, `to` (string): The `id`s of the two `<Point>` components.
+- `minDistance`, `maxDistance` (number): The allowed range.
+- `stiffness` (number, optional): The rigidity of the constraint.
 
-// Keep the distance between 50px and 150px
-const minMax = new MinMaxDistanceConstraint(p1, p2, 50, 150, 1);
+</TabItem>
+</Tabs>
+
+---
+
+## MinMaxAngleConstraint
+
+Keeps the angle between three particles within a minimum and maximum range.
+
+<Tabs groupId="lang">
+<TabItem value="js" label="JS Class">
+
+#### `new MinMaxAngleConstraint(a, b, c, minAngle, maxAngle, stiffness)`
+- `a`, `b`, `c` (Particle): The three particles, where `b` is the vertex.
+- `minAngle`, `maxAngle` (number): The allowed angle range in radians.
+- `stiffness` (number): The rigidity of the constraint.
+
+</TabItem>
+<TabItem value="react" label="React Component">
+
+#### `<MinMaxAngleConstraint from center to minAngle maxAngle [stiffness] />`
+- `from`, `center`, `to` (string): The `id`s of the three `<Point>` components.
+- `minAngle`, `maxAngle` (number): The allowed angle range in radians.
+- `stiffness` (number, optional): The rigidity of the constraint.
+
+</TabItem>
+</Tabs>
+
+---
+
+## PlaneConstraint
+
+Forces a particle to stay on one side of an infinite plane.
+
+<Tabs groupId="lang">
+<TabItem value="js" label="JS Class">
+
+#### `new PlaneConstraint(a, origin, normal)`
+- `a` (Particle): The particle to constrain.
+- `origin` (Vec2): A point on the plane.
+- `normal` (Vec2): The normal vector of the plane (points to the allowed side).
+
+</TabItem>
+<TabItem value="react" label="React Component">
+
+#### `<PlaneConstraint particle origin normal />`
+- `particle` (string): The `id` of the `<Point>` to constrain.
+- `origin` (Vec2): A point on the plane.
+- `normal` (Vec2): The normal vector of the plane.
+
+</TabItem>
+</Tabs>
+
+---
+
+## CollisionConstraint
+
+Prevents two particles from overlapping based on their `radius` style property.
+
+<Tabs groupId="lang">
+<TabItem value="js" label="JS Class">
+
+#### `new CollisionConstraint(a, b, stiffness)`
+- `a`, `b` (Particle): The two particles to check for collision.
+- `stiffness` (number): The rigidity of the collision response.
+
+</TabItem>
+<TabItem value="react" label="React Component">
+
+#### `<CollisionConstraint from to [stiffness] />`
+- `from`, `to` (string): The `id`s of the two `<Point>` components to check for collision.
+- `stiffness` (number, optional): The rigidity of the collision response.
+
+</TabItem>
+</Tabs>
+
+---
+
+## Style Property
+
+All constraints accept an optional `style` property in their constructor (for JS) or as a prop (for React). This object is used by the default renderer.
+
+```typescript
+interface ConstraintStyle {
+  color?: string;
+  lineWidth?: number;
+  hidden?: boolean;
+}
 ```

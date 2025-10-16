@@ -8,13 +8,14 @@ In a Verlet integration simulation, the world is made of particles (also called 
 
 ## What is a Particle?
 
-A particle is essentially a point in space that has a few basic properties:
+A particle is a point in space that has a few basic properties:
 - A **current position** (`pos`)
-- An **old position** (`oldpos`)
-- An **acceleration** (`acc`)
-- A **mass** (`mass`)
+- A **last position** (`lastPos`) to track its movement
+- An **acceleration** (`acc`) which is updated on each frame (e.g., by gravity)
+- A **mass** (`mass`) which influences how it reacts to forces
+- An optional **style** (`style`) for rendering
 
-You might notice that there is no `velocity` property. This is the key characteristic of Verlet integration. A particle's velocity is implicitly calculated by comparing its current position to its old position. This makes the simulation very stable.
+You might notice that there is no `velocity` property. This is the key characteristic of Verlet integration. A particle's velocity is implicitly calculated by comparing its current position to its last position (`pos.sub(lastPos)`). This makes the simulation very stable and efficient.
 
 ## Creating a Particle
 
@@ -26,17 +27,18 @@ import TabItem from '@theme/TabItem';
 <Tabs groupId="lang">
   <TabItem value="react" label="React">
 
-  In `verlet-react`, you use the `<Point>` component to create a particle. You just need to provide its initial position.
+  In `verlet-react`, you use the `<Point>` component to create a particle. You must provide a unique `id` and its initial `pos`.
 
   ```jsx
   import React from 'react';
   import { VerletCanvas, Point } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
 
   const App = () => {
     return (
       <VerletCanvas>
         {/* This creates a particle at position (100, 100) */}
-        <Point position={{ x: 100, y: 100 }} />
+        <Point id="p1" pos={new Vec2(100, 100)} />
       </VerletCanvas>
     );
   };
@@ -53,17 +55,78 @@ import TabItem from '@theme/TabItem';
   const sim = new VerletJS(500, 500);
 
   // This creates a particle at position (100, 100)
-  // You can also specify mass and other properties if needed
   const particle = new Particle(new Vec2(100, 100));
 
   // Don't forget to add it to the simulation
-  sim.composites.push({ particles: [particle], constraints: [] });
+  sim.addParticle(particle);
   
-  /*
+  /* ... animation loop ... */
+  ```
 
-  // The rest of your code to start the simulation
-  
-  */
+  </TabItem>
+</Tabs>
+
+## Particle Properties
+
+You can customize a particle's behavior and appearance with additional properties.
+
+### `pinned`: Making a Particle Static
+
+If you want a particle to be immovable, you can "pin" it. A pinned particle will not be affected by gravity or any other forces. This is useful for creating fixed points to which other objects can be attached.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  Add the `pinned` prop to the `<Point>` component.
+
+  ```jsx
+  <Point id="p1" pos={new Vec2(100, 100)} pinned />
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  To pin a particle, you need to add a `PinConstraint` to it.
+
+  ```javascript
+  import { PinConstraint } from 'verlet-engine';
+
+  const particle = new Particle(new Vec2(100, 100));
+  const pin = new PinConstraint(particle, particle.pos);
+
+  sim.addParticle(particle);
+  sim.addConstraint(pin);
+  ```
+
+  </TabItem>
+</Tabs>
+
+### `style`: Customizing Appearance
+
+You can change the color and size of a particle for rendering. The style object can have `radius` and `color` properties.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  Pass a `style` object to the `<Point>` component.
+
+  ```jsx
+  <Point 
+    id="p1" 
+    pos={new Vec2(100, 100)} 
+    style={{ color: '#ff0000', radius: 10 }} 
+  />
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  Set the `style` property on the `Particle` instance.
+
+  ```javascript
+  const particle = new Particle(new Vec2(100, 100));
+  particle.style.color = '#ff0000';
+  particle.style.radius = 10;
   ```
 
   </TabItem>
