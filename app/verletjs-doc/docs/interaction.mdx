@@ -1,0 +1,181 @@
+---
+sidebar_position: 6
+---
+
+# Interaction
+
+An interactive simulation is far more engaging than a static one. This guide explains the fundamental concepts of interaction and provides a detailed example for the most common use case: clicking and dragging particles.
+
+## The Core Problem: From Pixels to Particles
+
+Interaction is about bridging two different worlds:
+1.  **The User Input World**: This is the world of mouse clicks and key presses. It gives you information like "the user clicked at pixel coordinates (342, 150)".
+2.  **The Simulation World**: This is the world of physics, made of `Particle` and `Constraint` objects. It understands concepts like position and force, but has no idea what a "mouse" is.
+
+The main challenge of interaction is to **translate** input from the user's world into actions in the simulation's world. To do this, we need to write logic that answers questions like: "Which particle, if any, is near the mouse cursor?"
+
+## Example: Clicking and Dragging Particles
+
+The most common interaction is grabbing a particle and moving it around. The logic is a simple state machine:
+1.  On `mousedown`, find a nearby particle and "select" it.
+2.  On `mousemove`, if a particle is selected, move it.
+3.  On `mouseup`, "deselect" the particle.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  The `<VerletCanvas>` component provides props for mouse events like `onCanvasMouseDown`. These are the ideal tools for building interactions.
+
+  ```jsx
+  import React, { useState, useCallback } from 'react';
+  import { VerletCanvas, Point } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const DraggableParticles = () => {
+    const [dragged, setDragged] = useState(null);
+
+    const findNearest = useCallback((mousePos, composites) => {
+      let nearest = null;
+      let min_dist = Infinity;
+
+      for (const c of composites) {
+        for (const p of c.particles) {
+          const dist = p.pos.dist(mousePos);
+          if (dist < min_dist && dist < 20) { // 20px grab radius
+            min_dist = dist;
+            nearest = p;
+          }
+        }
+      }
+      return nearest;
+    }, []);
+
+    const handleMouseDown = useCallback((event, composites) => {
+      const mousePos = new Vec2(event.nativeEvent.offsetX, event.nativeEvent.offsetY);
+      const nearest = findNearest(mousePos, composites);
+      setDragged(nearest);
+    }, [findNearest]);
+
+    const handleMouseMove = useCallback((event, composites) => {
+      if (dragged) {
+        const mousePos = new Vec2(event.nativeEvent.offsetX, event.nativeEvent.offsetY);
+        dragged.pos.mutableSet(mousePos);
+      }
+    }, [dragged]);
+
+    const handleMouseUp = useCallback(() => {
+      setDragged(null);
+    }, []);
+
+    return (
+      <VerletCanvas
+        width={600}
+        height={400}
+        onCanvasMouseDown={handleMouseDown}
+        onCanvasMouseMove={handleMouseMove}
+        onCanvasMouseUp={handleMouseUp}
+        onCanvasMouseLeave={handleMouseUp} // Also release on leave
+      >
+        <Point id="p1" pos={new Vec2(250, 100)} />
+        <Point id="p2" pos={new Vec2(350, 100)} />
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  ### Step-by-Step Explanation
+
+  #### 1. Tracking the Dragged Particle
+  ```javascript
+  const [dragged, setDragged] = useState(null);
+  ```
+  We need to remember which particle is being dragged across multiple mouse events. A React state variable is perfect for this. We initialize it to `null`, meaning nothing is being dragged.
+
+  #### 2. Finding a Particle
+  ```javascript
+  const findNearest = useCallback((mousePos, composites) => { ... });
+  ```
+  This is our translator function. It takes the mouse position (in pixels) and the list of simulation composites. It loops through every particle and calculates its distance to the mouse. If it finds a particle that is very close (within a 20-pixel "grab radius"), it returns that particle. Otherwise, it returns `null`.
+
+  #### 3. Handling Mouse Events
+  - **`handleMouseDown`**: When the user clicks, we call `findNearest`. If it returns a particle, we store that particle in our state by calling `setDragged(particle)`.
+  - **`handleMouseMove`**: On every mouse movement, we check if `dragged` contains a particle. If it does, we update that particle's position (`dragged.pos`) to the new mouse coordinates. The physics engine will take care of the rest.
+  - **`handleMouseUp`**: When the user releases the button, we set `dragged` back to `null` to end the interaction.
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  With vanilla JS, you add event listeners directly to your `<canvas>` element.
+
+  ```javascript
+  const canvas = document.getElementById('canvas');
+  const sim = new VerletJS(600, 400);
+  // ... add particles ...
+
+  let draggedParticle = null;
+
+  canvas.addEventListener('mousedown', (event) => {
+    const mousePos = new Vec2(event.offsetX, event.offsetY);
+    // ... logic to find nearest particle ...
+    draggedParticle = nearest;
+  });
+
+  canvas.addEventListener('mousemove', (event) => {
+    if (draggedParticle) {
+      const mousePos = new Vec2(event.offsetX, event.offsetY);
+      draggedParticle.pos.mutableSet(mousePos);
+    }
+  });
+
+  canvas.addEventListener('mouseup', () => {
+    draggedParticle = null;
+  });
+  ```
+
+  ### Step-by-Step Explanation
+
+  #### 1. Tracking the Dragged Particle
+  ```javascript
+  let draggedParticle = null;
+  ```
+  We declare a variable in a scope accessible by all our event listeners. This variable will hold a reference to the particle being dragged. We initialize it to `null`.
+
+  #### 2. Finding a Particle
+  Inside the `mousedown` listener, we must implement the logic to find the nearest particle. This involves looping through `sim.composites` and all their `particles`, calculating the distance to `mousePos`, and checking if it's within a "grab radius".
+  ```javascript
+  let nearest = null;
+  let min_dist = Infinity;
+  for (const c of sim.composites) {
+    for (const p of c.particles) {
+      const dist = p.pos.dist(mousePos);
+      if (dist < min_dist && dist < 20) {
+        min_dist = dist;
+        nearest = p;
+      }
+    }
+  }
+  draggedParticle = nearest;
+  ```
+
+  #### 3. Handling Mouse Events
+  - **`mousedown` listener**: Its main job is to run the search logic above and assign the result to `draggedParticle`.
+  - **`mousemove` listener**: It checks if `draggedParticle` is not `null`. If a particle is being dragged, it updates its position. This is the only place the simulation state is directly changed by the user.
+  - **`mouseup` listener**: It resets `draggedParticle` to `null`, releasing the particle and ending the interaction.
+
+  </TabItem>
+</Tabs>
+
+## Beyond Drag-and-Drop: Other Ideas
+
+Once you understand the core pattern of translating user input into simulation actions, you can implement many other features:
+
+- **Spawning Particles**: In the `mousedown` handler, instead of finding a particle, create a new one at the mouse's position and add it to the simulation.
+
+- **Deleting Particles**: On `contextmenu` (right-click), find the nearest particle and remove its parent composite from the simulation's `composites` array.
+
+- **Cutting Constraints**: A more advanced version of deleting. On click, find the nearest *constraint* instead of the nearest particle. Then, remove that constraint from its parent composite's `constraints` array.
+
+- **Keyboard Input**: Use `document.addEventListener('keydown', ...)` (in JS) or a `onKeyDown` handler on a focused element (in React) to listen for key presses. You could use this to change gravity, apply a global force (like wind), or reset the simulation.

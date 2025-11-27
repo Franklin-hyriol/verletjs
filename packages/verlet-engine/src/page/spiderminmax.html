@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Verlet Spider - MinMaxAngleConstraint</title>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #222; }
+    canvas { display: block; background-color: #222;}
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script type="module">
+    import { VerletJS, Particle, DistanceConstraint, AngleConstraint, MinMaxAngleConstraint, PinConstraint, Composite, Vec2 } from '../../dist/verlet-engine.es.js';
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // --- Simulation Setup ---
+    const sim = new VerletJS(canvas.width, canvas.height);
+    sim.gravity = new Vec2(0, 0);
+    sim.friction = 0.98;
+
+    // --- Spider Factory with MinMaxAngleConstraint ---
+    function createSpider(origin) {
+      const composite = new Composite();
+      const legStiffness = 0.99;
+      const bodyStiffness = 1;
+      const angleStiffness = 1;
+
+      composite.thorax = new Particle(origin);
+      composite.head = new Particle(origin.add(new Vec2(0, -5)));
+      composite.abdomen = new Particle(origin.add(new Vec2(0, 10)));
+      composite.particles.push(composite.thorax, composite.head, composite.abdomen);
+      composite.constraints.push(new DistanceConstraint(composite.head, composite.thorax, bodyStiffness));
+      composite.constraints.push(new DistanceConstraint(composite.abdomen, composite.thorax, bodyStiffness));
+      composite.constraints.push(new AngleConstraint(composite.abdomen, composite.thorax, composite.head, 0.4));
+
+      for (let i = 0; i < 4; ++i) {
+        const lenCoef = (i === 1 || i === 2) ? 0.8 : 1;
+        const leg1_l = new Particle(composite.thorax.pos.add(new Vec2(-3, (i - 1.5) * 3)));
+        const leg1_r = new Particle(composite.thorax.pos.add(new Vec2(3, (i - 1.5) * 3)));
+        const leg2_l = new Particle(leg1_l.pos.add(new Vec2(-20, (i - 1.5) * 30).normal().scale(20 * lenCoef)));
+        const leg2_r = new Particle(leg1_r.pos.add(new Vec2(20, (i - 1.5) * 30).normal().scale(20 * lenCoef)));
+        const leg3_l = new Particle(leg2_l.pos.add(new Vec2(-20, (i - 1.5) * 50).normal().scale(20 * lenCoef)));
+        const leg3_r = new Particle(leg2_r.pos.add(new Vec2(20, (i - 1.5) * 50).normal().scale(20 * lenCoef)));
+        const foot_l = new Particle(leg3_l.pos.add(new Vec2(-20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
+        const foot_r = new Particle(leg3_r.pos.add(new Vec2(20, (i - 1.5) * 100).normal().scale(12 * lenCoef)));
+        composite.particles.push(leg1_l, leg1_r, leg2_l, leg2_r, leg3_l, leg3_r, foot_l, foot_r);
+
+        composite.constraints.push(new DistanceConstraint(leg1_l, composite.thorax, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg1_r, composite.thorax, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg2_l, leg1_l, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg2_r, leg1_r, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg3_l, leg2_l, legStiffness));
+        composite.constraints.push(new DistanceConstraint(leg3_r, leg2_r, legStiffness));
+        composite.constraints.push(new DistanceConstraint(foot_l, leg3_l, legStiffness));
+        composite.constraints.push(new DistanceConstraint(foot_r, leg3_r, legStiffness));
+
+        const range = 25 * (Math.PI / 180);
+        const addMinMaxAngle = (pA, pB, pC) => {
+          const initialAngle = pB.pos.angle2(pA.pos, pC.pos);
+          composite.constraints.push(new MinMaxAngleConstraint(pA, pB, pC, initialAngle - range, initialAngle + range, angleStiffness));
+        };
+
+        addMinMaxAngle(composite.thorax, leg1_l, leg2_l);
+        addMinMaxAngle(composite.thorax, leg1_r, leg2_r);
+        addMinMaxAngle(leg1_l, leg2_l, leg3_l);
+        addMinMaxAngle(leg1_r, leg2_r, leg3_r);
+        addMinMaxAngle(leg2_l, leg3_l, foot_l);
+        addMinMaxAngle(leg2_r, leg3_r, foot_r);
+      }
+      return composite;
+    }
+
+    const spiderComposite = createSpider(new Vec2(canvas.width / 2, canvas.height / 2));
+    sim.composites.push(spiderComposite);
+
+
+
+    // --- Animation Loop ---
+    function animate() {
+      sim.frame(16);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#999';
+      ctx.lineWidth = 1.5;
+
+      for (const c of sim.composites) {
+        // Draw only the "bones" of the spider for a cleaner look
+        for (const constraint of c.constraints) {
+            if (constraint instanceof DistanceConstraint) {
+                constraint.draw(ctx);
+            }
+        }
+        
+        // Draw body parts
+        ctx.fillStyle = '#eee';
+        ctx.beginPath();
+        ctx.arc(c.head.pos.x, c.head.pos.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(c.thorax.pos.x, c.thorax.pos.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(c.abdomen.pos.x, c.abdomen.pos.y, 8, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

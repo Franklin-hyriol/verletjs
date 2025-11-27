@@ -1,0 +1,103 @@
+---
+sidebar_position: 5
+---
+
+# Composites & Objects
+
+This section covers both the low-level `Composite` class and the high-level helper functions and React components used to create common shapes.
+
+## The `Composite` Class
+
+A `Composite` is a container for a group of `Particle` and `Constraint` objects. It is the primary way to group objects in the simulation.
+
+### Properties
+- `particles` (Particle[]): An array of particles in the composite.
+- `constraints` (Constraint[]): An array of constraints in the composite.
+
+### Methods
+- `pin(index, [pos])`: A convenience method to create a `PinConstraint` for a particle within the composite.
+
+---
+
+## High-Level Objects
+
+These are helpers that create and add pre-made composites to the simulation.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+### Line Segments
+
+Creates a chain of particles connected by distance constraints.
+
+<Tabs groupId="lang">
+<TabItem value="js" label="lineSegments()">
+
+`lineSegments(sim, vertices, stiffness)`
+- `sim` (VerletJS): The simulation instance.
+- `vertices` (Vec2[]): An array of points for the line.
+- `stiffness` (number): The stiffness of the constraints.
+
+</TabItem>
+<TabItem value="react" label="<LineSegments />">
+
+- `vertices` (Vec2[]): An array of points for the line.
+- `stiffness` (number): The stiffness of the constraints.
+- `pins` (number[], optional): An array of particle indices to pin.
+
+</TabItem>
+</Tabs>
+
+### Cloth
+
+Creates a 2D grid of particles, ideal for fabric simulations.
+
+<Tabs groupId="lang">
+<TabItem value="js" label="cloth()">
+
+`cloth(sim, origin, width, height, segmentsX, segmentsY, pinMod, stiffness)`
+- `sim` (VerletJS): The simulation instance.
+- `origin` (Vec2): The center point of the cloth.
+- `width` / `height` (number): The dimensions of the cloth.
+- `segmentsX` / `segmentsY` (number): The number of segments on each axis.
+- `pinMod` (number): A modifier for pinning particles on the top edge (e.g., `3` pins every 3rd particle).
+- `stiffness` (number): The stiffness of the constraints.
+
+</TabItem>
+<TabItem value="react" label="<Cloth />">
+
+- `origin` (Vec2): The center point of the cloth.
+- `width` / `height` (number): The dimensions of the cloth.
+- `segmentsX` / `segmentsY` (number): The number of segments on each axis.
+- `pinMod` (number): A modifier for pinning particles.
+- `stiffness` (number): The stiffness of the constraints.
+
+</TabItem>
+</Tabs>
+
+### Tire
+
+Creates a circular object with spokes.
+
+<Tabs groupId="lang">
+<TabItem value="js" label="tire()">
+
+`tire(sim, origin, radius, segments, spokeStiffness, treadStiffness)`
+- `sim` (VerletJS): The simulation instance.
+- `origin` (Vec2): The center of the tire.
+- `radius` (number): The radius of the tire.
+- `segments` (number): The number of segments.
+- `spokeStiffness` (number): The stiffness of the spokes connecting to the center.
+- `treadStiffness` (number): The stiffness of the outer tread.
+
+</TabItem>
+<TabItem value="react" label="<Tire />">
+
+- `origin` (Vec2): The center of the tire.
+- `radius` (number): The radius of the tire.
+- `segments` (number): The number of segments.
+- `spokeStiffness` (number): The stiffness of the spokes.
+- `treadStiffness` (number): The stiffness of the outer tread.
+
+</TabItem>
+</Tabs>

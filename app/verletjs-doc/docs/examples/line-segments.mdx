@@ -1,0 +1,112 @@
+---
+sidebar_position: 1
+---
+
+# Line Segments
+
+This example shows how to create a simple line segment chain.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import LineSegmentsDemo from '@site/src/components/InteractiveDemo/LineSegmentsDemo';
+
+<Tabs groupId="lang" defaultValue="visual">
+  <TabItem value="visual" label="Visual">
+    <LineSegmentsDemo />
+  </TabItem>
+  <TabItem value="react" label="React">
+
+  ```jsx
+  import React from 'react';
+  import { VerletCanvas, LineSegments } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const lineSegments = [];
+  const numSegments = 5;
+  const startX = 250;
+  const endX = 550;
+  const yPos = 50;
+
+  for (let i = 0; i < numSegments; i++) {
+    const t = i / (numSegments - 1);
+    const x = startX + (endX - startX) * t;
+    lineSegments.push(new Vec2(x, yPos));
+  }
+
+  const LineSegmentsExample = () => {
+
+    return (
+      <VerletCanvas width={800} height={400}>
+        <LineSegments vertices={lineSegments} stiffness={1} pins={[0]} />
+      </VerletCanvas>
+    );
+  };
+
+  export default LineSegmentsExample;
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  ```html
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>Verlet Line Segments Simulation</title>
+    <style>
+      body { margin: 0; overflow: hidden; background-color: #222; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script type="module">
+      import { VerletJS, Vec2, lineSegments } from 'https://unpkg.com/verlet-engine';
+
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 800;
+      canvas.height = 400;
+
+      const sim = new VerletJS(canvas.width, canvas.height);
+
+      function setupLineSegments(sim) {
+        const segments = [];
+        const numSegments = 5;
+        const startX = 250;
+        const endX = 550;
+        const yPos = 50;
+
+        for (let i = 0; i < numSegments; i++) {
+          const t = i / (numSegments - 1);
+          const x = startX + (endX - startX) * t;
+          segments.push(new Vec2(x, yPos));
+        }
+
+        const line = lineSegments(sim, segments, 1);
+        line.pin(0);
+      }
+
+      setupLineSegments(sim);
+
+      function animate() {
+        sim.frame(16);
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Render the composites
+        for (const c of sim.composites) {
+          c.draw(ctx);
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    </script>
+  </body>
+  </html>
+  ```
+
+  </TabItem>
+</Tabs>

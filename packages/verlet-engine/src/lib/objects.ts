@@ -66,32 +66,33 @@ export function lineSegments(sim: VerletJS, vertices: Vec2[], stiffness: number)
  * @param {Vec2} origin The center point of the cloth.
  * @param {number} width The width of the cloth.
  * @param {number} height The height of the cloth.
- * @param {number} segments The number of segments.
+ * @param {number} segmentsX The number of segments horizontally.
+ * @param {number} segmentsY The number of segments vertically.
  * @param {number} pinMod A modifier for pinning particles.
  * @param {number} stiffness The stiffness of the constraints.
  * @returns {Composite} The created composite.
  */
-export function cloth(sim: VerletJS, origin: Vec2, width: number, height: number, segments: number, pinMod: number, stiffness: number): Composite {
+export function cloth(sim: VerletJS, origin: Vec2, width: number, height: number, segmentsX: number, segmentsY: number, pinMod: number, stiffness: number): Composite {
 	const composite = new Composite();
 
-	const xStride = width / segments;
-	const yStride = height / segments;
+	const xStride = width / segmentsX;
+	const yStride = height / segmentsY;
 
-	for (let y = 0; y < segments; ++y) {
-		for (let x = 0; x < segments; ++x) {
+	for (let y = 0; y < segmentsY; ++y) {
+		for (let x = 0; x < segmentsX; ++x) {
 			const px = origin.x + x * xStride - width / 2 + xStride / 2;
 			const py = origin.y + y * yStride - height / 2 + yStride / 2;
 			composite.particles.push(new Particle(new Vec2(px, py)));
 
 			if (x > 0)
-				composite.constraints.push(new DistanceConstraint(composite.particles[y * segments + x], composite.particles[y * segments + x - 1], stiffness));
+				composite.constraints.push(new DistanceConstraint(composite.particles[y * segmentsX + x], composite.particles[y * segmentsX + x - 1], stiffness));
 
 			if (y > 0)
-				composite.constraints.push(new DistanceConstraint(composite.particles[y * segments + x], composite.particles[(y - 1) * segments + x], stiffness));
+				composite.constraints.push(new DistanceConstraint(composite.particles[y * segmentsX + x], composite.particles[(y - 1) * segmentsX + x], stiffness));
 		}
 	}
 
-	for (let x = 0; x < segments; ++x) {
+	for (let x = 0; x < segmentsX; ++x) {
 		if (x % pinMod === 0) {
 			composite.pin(x);
         }

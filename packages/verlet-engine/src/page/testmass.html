@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mass Test - Verlet.js</title>
+  <style>
+    body { background-color: #222; }
+    canvas { background-color: #333; display: block; margin: 20px auto; }
+  </style>
+</head>
+<body>
+  <canvas id="verlet-canvas" width="800" height="600"></canvas>
+
+  <script type="module">
+    import { VerletJS, Particle, Vec2, DistanceConstraint, Composite, PinConstraint } from '../../dist/verlet-engine.es.js';
+
+    const canvas = document.getElementById('verlet-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const sim = new VerletJS(800, 600, {
+      gravity: new Vec2(0, 0.5),
+      solverIterations: 15
+    });
+
+    // Create a composite to hold our chain
+    const chain = new Composite();
+
+    // Create the particles for the chain
+    const start = new Vec2(400, 100);
+    const numParticles = 10;
+    const segmentLength = 30;
+
+    for (let i = 0; i < numParticles; i++) {
+      const position = new Vec2(start.x, start.y + i * segmentLength);
+      // The last particle is 50 times heavier than the others
+      const mass = (i === numParticles - 1) ? 50 : 1;
+      chain.particles.push(new Particle(position, mass));
+    }
+
+    // Create the distance constraints to link the particles
+    for (let i = 0; i < numParticles - 1; i++) {
+      const constraint = new DistanceConstraint(chain.particles[i], chain.particles[i+1], 1, segmentLength);
+      chain.constraints.push(constraint);
+    }
+
+    // Pin the first (lightest) particle
+    chain.pin(0);
+
+    // Add the composite to the simulation
+    sim.composites.push(chain);
+
+    // --- Mouse Interaction ---
+    let draggedEntity = null;
+    const mouse = new Vec2(0, 0);
+    const selectionRadius = 20;
+    const highlightColor = "#4f545c";
+
+    function nearestEntity() {
+      let d2Nearest = Infinity;
+      let entity = null;
+
+      // Check for pins first
+      for (const c of chain.constraints) {
+        if (c instanceof PinConstraint) {
+          const d2 = c.pos.dist2(mouse);
+          if (d2 < d2Nearest && d2 < selectionRadius * selectionRadius) {
+            entity = c;
+            d2Nearest = d2;
+          }
+        }
+      }
+
+      // Check for particles
+      for (const p of chain.particles) {
+        const d2 = p.pos.dist2(mouse);
+        if (d2 < d2Nearest && d2 < selectionRadius * selectionRadius) {
+          entity = p;
+          d2Nearest = d2;
+        }
+      }
+      return entity;
+    }
+
+    canvas.onmousedown = function (e) { draggedEntity = nearestEntity(); };
+    canvas.onmouseup = function (e) { draggedEntity = null; };
+    canvas.onmousemove = function (e) {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+      if (draggedEntity) {
+        draggedEntity.pos.mutableSet(mouse);
+      }
+    };
+
+
+    // --- Drawing and Animation Loop ---
+    function animate() {
+      // Advance the simulation
+      sim.frame();
+
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw constraints
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      for (const c of sim.composites) {
+        for (const constraint of c.constraints) {
+          constraint.draw(ctx);
+        }
+      }
+
+      // Draw particles
+      for (const c of sim.composites) {
+        for (const p of c.particles) {
+          ctx.beginPath();
+          // Make the heavy particle visually distinct
+          const radius = (p.mass > 1) ? 15 : 5;
+          const color = (p.mass > 1) ? '#ff4444' : '#ffffff';
+          ctx.arc(p.pos.x, p.pos.y, radius, 0, 2 * Math.PI);
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
+      }
+
+      // Highlight nearest entity
+      const nearest = draggedEntity || nearestEntity();
+      if (nearest) {
+        ctx.beginPath();
+        ctx.arc(nearest.pos.x, nearest.pos.y, 20, 0, 2 * Math.PI);
+        ctx.strokeStyle = highlightColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

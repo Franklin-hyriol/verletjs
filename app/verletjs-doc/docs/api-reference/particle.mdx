@@ -1,0 +1,90 @@
+---
+sidebar_position: 1
+---
+
+# Particle & Point
+
+The `Particle` class is the fundamental building block of any simulation. The `<Point>` component is its declarative React counterpart.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs groupId="lang">
+  <TabItem value="js" label="Particle (JavaScript)">
+
+  A `Particle` represents a single point in space with mass.
+
+  ## Constructor
+
+  ### `new Particle(pos, [mass])`
+
+  - `pos` ([`Vec2`](/api-reference/vec2)): The initial position.
+  - `mass` (number, optional): The mass of the particle. Defaults to `1`.
+
+  #### Example
+  ```javascript
+  import { Particle, Vec2 } from 'verlet-engine';
+
+  // A particle with default mass of 1
+  const p1 = new Particle(new Vec2(100, 100));
+
+  // A heavier particle
+  const p2 = new Particle(new Vec2(200, 100), 5.0);
+  ```
+
+  ## Properties
+
+  - `pos` (Vec2): The current position vector.
+  - `lastPos` (Vec2): The position vector in the previous frame.
+  - `acc` (Vec2): The acceleration vector, where forces are accumulated.
+  - `mass` (number): The mass of the particle.
+  - `style` (ParticleStyle, optional): An object for rendering style (`{ radius, color, hidden }`).
+
+  </TabItem>
+  <TabItem value="react" label="Point (React)">
+
+  The `<Point>` component creates a single particle in the simulation.
+
+  ## Props
+
+  ### `id`
+  - **Type**: `string` (required)
+  
+  A unique identifier for the particle. This is crucial for connecting constraints to it.
+
+  ### `pos`
+  - **Type**: [`Vec2`](/api-reference/vec2) (required)
+
+  The initial position of the particle.
+
+  ### `pinned`
+  - **Type**: `boolean` (optional)
+
+  If `true`, the particle will be fixed in place, creating a `PinConstraint`. Defaults to `false`.
+
+  ### `mass`
+  - **Type**: `number` (optional)
+
+  The mass of the particle. Defaults to `1`.
+
+  ### `style`
+  - **Type**: `ParticleStyle` (optional)
+
+  An object to define the rendering style: `{ radius, color, hidden }`.
+
+  ### Example
+
+  ```jsx
+  import { Point } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  <Point 
+    id="p1"
+    pos={new Vec2(100, 100)}
+    pinned
+    style={{ color: 'red', radius: 10 }}
+  />
+  ```
+
+  </TabItem>
+</Tabs>

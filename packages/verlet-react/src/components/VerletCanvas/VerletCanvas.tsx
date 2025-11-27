@@ -1,139 +1,145 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useMemo, useCallback, useEffect } from 'react';
+import { VerletContext, type VerletContextType } from '../../context/VerletContext';
 import { useVerlet } from '../../hooks/useVerlet';
-import { Vec2, PinConstraint } from 'verlet-engine';
-import { VerletContext } from '../../context/VerletContext';
+import { Composite, Particle, type VerletOptions, type IConstraint } from 'verlet-engine';
 
-// Define the props for the VerletCanvas component
-interface VerletCanvasProps {
+interface VerletCanvasProps extends Omit<React.CanvasHTMLAttributes<HTMLCanvasElement>, 'onMouseDown' | 'onMouseMove' | 'onMouseUp' | 'onMouseLeave' | 'onTouchStart' | 'onTouchMove' | 'onTouchEnd'> {
   width: number;
   height: number;
   children?: React.ReactNode;
+  options?: VerletOptions;
+  cursor?: string;
+  onCanvasMouseDown?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasMouseMove?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasMouseUp?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasMouseLeave?: (event: React.MouseEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasTouchStart?: (event: React.TouchEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasTouchMove?: (event: React.TouchEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  onCanvasTouchEnd?: (event: React.TouchEvent<HTMLCanvasElement>, composites: Composite[]) => void;
+  /** If provided, this function will be used to render the simulation instead of the default renderer. */
+  customRenderer?: (ctx: CanvasRenderingContext2D, composites: Composite[]) => void;
 }
 
-/**
- * A React component that provides a canvas for rendering a VerletJS simulation.
- * It handles the simulation loop, drawing, and mouse interactions.
- */
-export const VerletCanvas: React.FC<VerletCanvasProps> = ({ width, height, children }) => {
-  // Use our custom hook to manage the simulation
-  const { engine, composites } = useVerlet({ width, height });
+export const VerletCanvas: React.FC<VerletCanvasProps> = ({ 
+  width, 
+  height, 
+  children, 
+  options,
+  cursor,
+  onCanvasMouseDown,
+  onCanvasMouseMove,
+  onCanvasMouseUp,
+  onCanvasMouseLeave,
+  onCanvasTouchStart,
+  onCanvasTouchMove,
+  onCanvasTouchEnd,
+  customRenderer,
+  ...props 
+}) => {
+  const { engine, composites } = useVerlet({ width, height, options });
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particleIdMap = useRef<Map<string, Particle>>(new Map());
 
-  // Create the context value
-  const contextValue = useMemo(() => ({ engine }), [engine]);
+  const getParticleById = useCallback((id: string) => particleIdMap.current.get(id), []);
+  
+  const registerParticle = useCallback((id: string, particle: Particle) => {
+    particleIdMap.current.set(id, particle);
+  }, []);
 
-  // Refs for mouse interaction state
-  const mouse = useRef(new Vec2(0, 0));
-  const draggedEntity = useRef<any>(null);
+  const unregisterParticle = useCallback((id: string) => {
+    particleIdMap.current.delete(id);
+  }, []);
 
-  // This effect handles all the drawing on the canvas
+  const contextValue = useMemo((): VerletContextType | null => {
+    if (!engine) return null;
+    return {
+      engine,
+      getParticleById,
+      registerParticle,
+      unregisterParticle,
+    };
+  }, [engine, getParticleById, registerParticle, unregisterParticle]);
+
+  // This effect dynamically updates the engine's properties when the options prop changes.
+  useEffect(() => {
+    if (engine && options) {
+      if (options.gravity) {
+        engine.gravity = options.gravity;
+      }
+      if (typeof options.friction === 'number') {
+        engine.friction = options.friction;
+      }
+      if (typeof options.groundFriction === 'number') {
+        engine.groundFriction = options.groundFriction;
+      }
+      if (typeof options.solverIterations === 'number') {
+        engine.solverIterations = options.solverIterations;
+      }
+      if (typeof options.restitution === 'number') {
+        engine.restitution = options.restitution;
+      }
+    }
+  }, [engine, options]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !engine) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // --- High-density (Retina) screen scaling ---
     const dpr = window.devicePixelRatio || 1;
     if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
         canvas.width = width * dpr;
         canvas.height = height * dpr;
         ctx.scale(dpr, dpr);
     }
-
-    // --- Drawing Logic ---
     ctx.clearRect(0, 0, width, height);
 
-    for (const c of composites) {
-      // Draw constraints
-      for (const constraint of c.constraints) {
-        if (typeof constraint.draw === 'function') {
-          constraint.draw(ctx);
+    // Use the custom renderer if provided, otherwise fall back to the default renderer.
+    // This makes the component flexible while maintaining backward compatibility.
+    if (customRenderer) {
+      customRenderer(ctx, composites);
+    } else {
+      for (const c of composites) {
+        for (const constraint of c.constraints as IConstraint[]) {
+          if (typeof constraint.draw === 'function') constraint.draw(ctx);
         }
-      }
-
-      // Draw particles
-      for (const p of c.particles) {
-        ctx.beginPath();
-        ctx.arc(p.pos.x, p.pos.y, 2, 0, 2 * Math.PI);
-        ctx.fillStyle = "#2dad8f";
-        ctx.fill();
-      }
-    }
-
-    // Highlight dragged or nearest entity
-    const nearest = draggedEntity.current || nearestEntity();
-    if (nearest) {
-        ctx.beginPath();
-        ctx.arc(nearest.pos.x, nearest.pos.y, 8, 0, 2 * Math.PI);
-        ctx.strokeStyle = "#4f545c";
-        ctx.stroke();
-    }
-
-  }, [composites, width, height, engine]); // Re-run effect if composites or dimensions change
-
-
-  // --- Mouse Interaction Logic ---
-
-  const nearestEntity = () => {
-    if (!engine) return null;
-    let d2Nearest = Infinity;
-    let entity = null;
-    const selectionRadius = 20;
-
-    for (const c of engine.composites) {
         for (const p of c.particles) {
-            const d2 = p.pos.dist2(mouse.current);
-            if (d2 < d2Nearest && d2 < selectionRadius * selectionRadius) {
-                entity = p;
-                d2Nearest = d2;
-            }
+          ctx.beginPath();
+          const radius = p.style?.radius || 2;
+          const color = p.style?.color || '#2dad8f';
+          ctx.arc(p.pos.x, p.pos.y, radius, 0, 2 * Math.PI);
+          ctx.fillStyle = color;
+          ctx.fill();
         }
+      }
     }
-    
-    for (const c of engine.composites) {
-        for (const constraint of c.constraints) {
-            if (constraint instanceof PinConstraint && constraint.a === entity) {
-                return constraint;
-            }
-        }
-    }
+  }, [composites, width, height, engine, customRenderer]);
 
-    return entity;
-  }
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseDown?.(e, composites);
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseMove?.(e, composites);
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseUp?.(e, composites);
+  const handleMouseLeave = (e: React.MouseEvent<HTMLCanvasElement>) => onCanvasMouseLeave?.(e, composites);
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => onCanvasTouchStart?.(e, composites);
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => onCanvasTouchMove?.(e, composites);
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => onCanvasTouchEnd?.(e, composites);
 
-  const handleMouseDown = () => {
-    draggedEntity.current = nearestEntity();
-  };
+  if (!contextValue) return null;
 
-  const handleMouseUp = () => {
-    draggedEntity.current = null;
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    mouse.current.x = e.clientX - rect.left;
-    mouse.current.y = e.clientY - rect.top;
-    
-    if (draggedEntity.current) {
-        draggedEntity.current.pos.mutableSet(mouse.current);
-    }
-  };
-
-  // The component renders the canvas and provides the simulation context to its children.
   return (
     <VerletContext.Provider value={contextValue}>
       <canvas
         ref={canvasRef}
         width={width}
         height={height}
-        style={{ width: `${width}px`, height: `${height}px` }}
+        style={{ width: `${width}px`, height: `${height}px`, cursor: cursor || 'default' }}
         onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseUp} // Stop dragging if mouse leaves canvas
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        {...props}
       />
       {children}
     </VerletContext.Provider>

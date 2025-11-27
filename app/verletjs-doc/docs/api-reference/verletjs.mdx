@@ -1,0 +1,89 @@
+---
+sidebar_position: 3
+---
+
+# VerletJS & VerletCanvas
+
+This page documents the main simulation container, which is the `VerletJS` class for vanilla JavaScript, and the `<VerletCanvas>` component for React.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs groupId="lang">
+  <TabItem value="js" label="VerletJS (JavaScript)">
+
+  This is the main class for the physics simulation. It manages the world, its properties, and all the objects within it.
+
+  ## Constructor
+
+  ### `new VerletJS(width, height, [options])`
+
+  Creates a new physics simulation world.
+
+  - `width` (number): The width of the simulation world.
+  - `height` (number): The height of the simulation world.
+  - `options` (object, optional): An object to configure the simulation.
+
+  ```javascript
+  import { VerletJS } from 'verlet-engine';
+  const sim = new VerletJS(800, 600, { gravity: new Vec2(0, 0.5) });
+  ```
+
+  ## Properties
+
+  - `width` / `height` (number): The dimensions of the simulation world.
+  - `gravity` (Vec2): Global gravity vector applied to all particles.
+  - `friction` (number): Air friction. A value of `1.0` means no friction.
+  - `groundFriction` (number): Friction applied when a particle is on the ground boundary.
+  - `restitution` (number): The "bounciness" of particles on world boundaries (`0` = no bounce, `1` = perfect bounce).
+  - `solverIterations` (number): Number of times constraints are solved per frame. Higher values mean more rigid structures.
+  - `composites` (Composite[]): An array containing all `Composite` objects in the simulation. To add an object, create a `Composite` and push it into this array: `sim.composites.push(myComposite);`.
+  - `bounds` (function): A function that constrains particles to the world boundaries. You can override this to change the world's behavior (e.g., to make it wrap around).
+
+  ## Methods
+
+  ### `frame()`
+
+  Advances the simulation by one fixed time step.
+
+  *Note: The `deltaTime` parameter from previous versions is now ignored.*
+
+  </TabItem>
+  <TabItem value="react" label="VerletCanvas (React)">
+
+  This component is the React wrapper around the `VerletJS` engine. It creates a simulation world and a `<canvas>` element to render it.
+
+  ## Props
+
+  ### `width` / `height`
+  - **Type**: `number` (required)
+  
+  The dimensions of the canvas and the simulation world.
+
+  ### `options`
+  - **Type**: `object` (optional)
+
+  An object to configure the simulation, identical to the `options` for the `VerletJS` constructor (see the JavaScript tab).
+
+  ### `customRenderer`
+  - **Type**: `(ctx, composites) => void` (optional)
+
+  A function to take over rendering. When provided, the default renderer is disabled. See the [Rendering](/rendering#custom-rendering) page for details.
+
+  ### Event Handlers
+  - `onCanvasMouseDown`
+  - `onCanvasMouseMove`
+  - `onCanvasMouseUp`
+  - `onCanvasMouseLeave`
+  - `onCanvasTouchStart`
+  - `onCanvasTouchMove`
+  - `onCanvasTouchEnd`
+
+  These props allow you to respond to user input. They are functions that receive the React `SyntheticEvent` and the array of simulation `composites`. See the [Interaction](/interaction) page for examples.
+
+  ### Other Props
+
+  Any other props (e.g., `className`, `style`) are passed directly to the underlying `<canvas>` element.
+
+  </TabItem>
+</Tabs>

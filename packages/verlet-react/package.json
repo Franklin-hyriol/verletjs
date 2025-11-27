@@ -1,6 +1,6 @@
 {
   "name": "verlet-react",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A React wrapper library for verlet-engine, providing declarative components for 2D Verlet physics simulations.",
   "keywords": ["react", "verlet", "physics", "2d", "hook", "component", "typescript"],
   "homepage": "https://github.com/Franklin-hyriol/verletjs#readme",
