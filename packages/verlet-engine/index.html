@@ -1,130 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Test: verlet-engine Build</title>
+<title>Verlet-Engine Demos</title>
 <meta charset="UTF-8" />
 <style>
   body { font-family: sans-serif; background: #222; color: #eee; text-align: center; }
-  canvas { background: #fff; }
+  nav { margin: 10px; }
+  nav a { color: #0af; text-decoration: none; }
+  .container { margin-top: 50px; }
 </style>
 </head>
 <body>
-<h1>Test: verlet-engine Build</h1>
-<canvas id="scratch" style="width: 800px; height: 500px;"></canvas>
-
-<script type="module">
-  // Import the headless engine and the new helper functions
-  import { VerletJS, Vec2, PinConstraint, lineSegments, tire } from './dist/verlet-engine.es.js';
-
-  window.onload = function() {
-    const canvas = document.getElementById("scratch");
-    const ctx = canvas.getContext("2d");
-    const width = parseInt(canvas.style.width);
-    const height = parseInt(canvas.style.height);
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
-
-    // 1. Initialize the HEADLESS engine
-    const sim = new VerletJS(width, height);
-    sim.friction = 1;
-
-    // 2. Use the new standalone functions, passing the 'sim' instance
-    const segment = lineSegments(sim, [new Vec2(20,10), new Vec2(40,10), new Vec2(60,10), new Vec2(80,10), new Vec2(100,10)], 0.02);
-    segment.pin(0);
-    segment.pin(2);
-    segment.pin(4);
-
-    const tire1 = tire(sim, new Vec2(200,50), 50, 30, 0.3, 0.9);
-    const tire2 = tire(sim, new Vec2(400,50), 70, 7, 0.1, 0.2);
-    const tire3 = tire(sim, new Vec2(600,50), 70, 3, 1, 1);
-
-    // --- All the logic that was removed from the engine is now here, in the "UI layer" ---
-
-    let draggedEntity = null;
-    const mouse = new Vec2(0,0);
-    const selectionRadius = 20;
-    const highlightColor = "#4f545c";
-
-    function nearestEntity() {
-        let d2Nearest = Infinity;
-        let entity = null;
-
-        for (const c of sim.composites) {
-            for (const p of c.particles) {
-                const d2 = p.pos.dist2(mouse);
-                if (d2 < d2Nearest && d2 < selectionRadius * selectionRadius) {
-                    entity = p;
-                    d2Nearest = d2;
-                }
-            }
-        }
-        
-        for (const c of sim.composites) {
-            for (const constraint of c.constraints) {
-                if (constraint instanceof PinConstraint && constraint.a === entity) {
-                    return constraint;
-                }
-            }
-        }
-
-        return entity;
-    }
-
-    canvas.onmousedown = function(e) {
-        draggedEntity = nearestEntity();
-    };
-
-    canvas.onmouseup = function(e) {
-        draggedEntity = null;
-    };
-
-    canvas.onmousemove = function(e) {
-        const rect = canvas.getBoundingClientRect();
-        mouse.x = e.clientX - rect.left;
-        mouse.y = e.clientY - rect.top;
-        
-        if (draggedEntity) {
-            draggedEntity.pos.mutableSet(mouse);
-        }
-    };
-
-    function draw() {
-        ctx.clearRect(0, 0, width, height);
-
-        for (const c of sim.composites) {
-            for (const constraint of c.constraints) {
-                if (typeof (constraint).draw === 'function') {
-                    (constraint).draw(ctx);
-                }
-            }
-
-            for (const p of c.particles) {
-                ctx.beginPath();
-                ctx.arc(p.pos.x, p.pos.y, 2, 0, 2 * Math.PI);
-                ctx.fillStyle = "#2dad8f";
-                ctx.fill();
-            }
-        }
-        
-        const nearest = draggedEntity || nearestEntity();
-        if (nearest) {
-            ctx.beginPath();
-            ctx.arc(nearest.pos.x, nearest.pos.y, 8, 0, 2 * Math.PI);
-            ctx.strokeStyle = highlightColor;
-            ctx.stroke();
-        }
-    }
-
-    function loop() {
-      sim.frame(16);
-      draw();
-      requestAnimationFrame(loop);
-    };
-
-    loop();
-  };
-</script>
+<nav>
+  <a href="index.html">Home</a> |
+  <a href="src/page/lineSegment.html">Line Segment</a> |
+  <a href="src/page/tire.html">Tires</a> |
+  <a href="src/page/square.html">Square</a>
+  <a href="src/page/spirale.html">Spirale</a> |
+  <a href="src/page/CollisionConstraint.html">Collision Constraint</a>
+</nav>
+<h1>Verlet-Engine Demos</h1>
+<div class="container">
+  <p>Welcome to the Verlet-Engine demos. Please select a demo from the navigation bar above.</p>
+</div>
 </body>
 </html>

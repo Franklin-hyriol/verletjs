@@ -89,6 +89,14 @@ export class Vec2 {
 		return this;
 	}
 
+	mutableRotate(origin: Vec2, theta: number): this {
+		const x = this.x - origin.x;
+		const y = this.y - origin.y;
+		this.x = x * Math.cos(theta) - y * Math.sin(theta) + origin.x;
+		this.y = x * Math.sin(theta) + y * Math.cos(theta) + origin.y;
+		return this;
+	}
+
 	equals(v: Vec2): boolean {
 		return this.x === v.x && this.y === v.y;
 	}

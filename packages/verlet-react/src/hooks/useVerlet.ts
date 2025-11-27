@@ -1,7 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
-import { VerletJS, Composite } from 'verlet-engine';
+import { VerletJS, Composite, Vec2 } from 'verlet-engine';
 
-export const useVerlet = ({ width, height }: { width: number; height: number; }) => {
+// Define the options type, mirroring the one in the VerletJS constructor
+export interface VerletOptions {
+  gravity?: Vec2;
+  friction?: number;
+  groundFriction?: number;
+  solverIterations?: number;
+  restitution?: number;
+}
+
+interface UseVerletParams {
+  width: number;
+  height: number;
+  options?: VerletOptions;
+}
+
+export const useVerlet = ({ width, height, options }: UseVerletParams) => {
   // Use a ref to hold the engine instance.
   // This ensures the same instance is used across all renders.
   const engine = useRef<VerletJS | null>(null);
@@ -11,8 +26,8 @@ export const useVerlet = ({ width, height }: { width: number; height: number; })
 
   // This effect runs once when the component mounts, or when width/height change.
   useEffect(() => {
-    // Create a new instance of the headless engine.
-    const sim = new VerletJS(width, height);
+    // Create a new instance of the headless engine, passing the options.
+    const sim = new VerletJS(width, height, options);
     engine.current = sim;
     setComposites(sim.composites);
 
@@ -39,7 +54,7 @@ export const useVerlet = ({ width, height }: { width: number; height: number; })
       // Stop the animation loop to prevent memory leaks.
       cancelAnimationFrame(animationFrameId);
     };
-  }, [width, height]);
+  }, [width, height]); // Note: options are intentionally left out of the dependency array
 
   // Return the engine instance and the simulation state.
   return { engine: engine.current, composites };

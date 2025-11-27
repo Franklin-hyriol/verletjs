@@ -1,0 +1,124 @@
+---
+sidebar_position: 3
+---
+
+# Square
+
+This example demonstrates how to create a rigid body, like a square, by connecting particles with distance constraints. The two diagonal constraints are crucial for maintaining the square's shape.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import SquareDemo from '@site/src/components/InteractiveDemo/SquareDemo';
+
+<Tabs groupId="lang" defaultValue="visual">
+  <TabItem value="visual" label="Visual">
+    <SquareDemo />
+  </TabItem>
+  <TabItem value="react" label="React">
+
+  ```jsx
+  import React from 'react';
+  import { VerletCanvas, Point, DistanceConstraint } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const SquareExample = () => {
+    const x = 350;
+    const y = 100;
+    const size = 100;
+
+    return (
+      <VerletCanvas
+        width={800}
+        height={400}
+        options={{ gravity: new Vec2(0, 0.5) }}
+      >
+        {/* 1. Define the 4 points of the square with unique IDs */}
+        <Point id="a" pos={new Vec2(x, y)} />
+        <Point id="b" pos={new Vec2(x + size, y)} />
+        <Point id="c" pos={new Vec2(x + size, y + size)} />
+        <Point id="d" pos={new Vec2(x, y + size)} />
+
+        {/* 2. Define the 6 constraints to link the points */}
+        {/* Edges */}
+        <DistanceConstraint from="a" to="b" />
+        <DistanceConstraint from="b" to="c" />
+        <DistanceConstraint from="c" to="d" />
+        <DistanceConstraint from="d" to="a" />
+        
+        {/* Cross braces for rigidity */}
+        <DistanceConstraint from="a" to="c" />
+        <DistanceConstraint from="b" to="d" />
+      </VerletCanvas>
+    );
+  };
+
+  export default SquareExample;
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  ```html
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>Verlet Square Simulation</title>
+    <style>
+      body { margin: 0; overflow: hidden; background-color: #222; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script type="module">
+      import { VerletJS, Vec2, Composite, Particle, DistanceConstraint } from 'https://unpkg.com/verlet-engine';
+
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 800;
+      canvas.height = 400;
+
+      const sim = new VerletJS(canvas.width, canvas.height, { gravity: new Vec2(0, 0.5) });
+
+      const square = new Composite();
+      const x = 350;
+      const y = 100;
+      const size = 100;
+      const stiffness = 1;
+
+      const a = new Particle(x, y);
+      const b = new Particle(x + size, y);
+      const c = new Particle(x + size, y + size);
+      const d = new Particle(x, y + size);
+
+      square.particles.push(a, b, c, d);
+
+      square.constraints.push(new DistanceConstraint(a, b, stiffness));
+      square.constraints.push(new DistanceConstraint(b, c, stiffness));
+      square.constraints.push(new DistanceConstraint(c, d, stiffness));
+      square.constraints.push(new DistanceConstraint(d, a, stiffness));
+      square.constraints.push(new DistanceConstraint(a, c, stiffness));
+      square.constraints.push(new DistanceConstraint(b, d, stiffness));
+
+      sim.addComposite(square);
+
+      function animate() {
+        sim.frame(16);
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        for (const c of sim.composites) {
+          c.draw(ctx);
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    </script>
+  </body>
+  </html>
+  ```
+
+  </TabItem>
+</Tabs>

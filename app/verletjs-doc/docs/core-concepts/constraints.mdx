@@ -1,0 +1,144 @@
+---
+sidebar_position: 2
+---
+
+# Constraints
+
+Constraints are rules that define the relationships between particles. They are the core mechanism for building structures. This page introduces the main constraints available.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## DistanceConstraint
+
+Forces two particles to maintain a specific distance from each other. This is the most common constraint.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <DistanceConstraint from="p1" to="p2" />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const constraint = new DistanceConstraint(p1, p2);
+  sim.addConstraint(constraint);
+  ```
+  </TabItem>
+</Tabs>
+
+## CollisionConstraint
+
+Prevents two particles from overlapping, based on their `style.radius`.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <Point id="p1" pos={new Vec2(240, 100)} style={{ radius: 20 }} />
+  <Point id="p2" pos={new Vec2(260, 100)} style={{ radius: 20 }} />
+  <CollisionConstraint from="p1" to="p2" />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const p1 = new Particle(new Vec2(240, 100));
+  p1.style.radius = 20;
+  const p2 = new Particle(new Vec2(260, 100));
+  p2.style.radius = 20;
+  const collision = new CollisionConstraint(p1, p2, 1);
+  sim.addConstraint(collision);
+  ```
+  </TabItem>
+</Tabs>
+
+## PinConstraint
+
+Fixes a particle to a specific point in space. This is useful for creating anchor points.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  *This is achieved via the `pinned` prop on the `<Point>` component.*
+  ```jsx
+  <Point id="anchor" pos={new Vec2(250, 100)} pinned />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const pin = new PinConstraint(p1, p1.pos);
+  sim.addConstraint(pin);
+  ```
+  </TabItem>
+</Tabs>
+
+## AngleConstraint
+
+Maintains the initial angle between three particles.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <AngleConstraint from="p1" center="p2" to="p3" stiffness={0.1} />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const angleConstraint = new AngleConstraint(p1, p2, p3, 0.1);
+  sim.addConstraint(angleConstraint);
+  ```
+  </TabItem>
+</Tabs>
+
+## MinMaxDistanceConstraint
+
+Keeps the distance between two particles within a certain range.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <MinMaxDistanceConstraint from="p1" to="p2" minDistance={50} maxDistance={150} />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const minMax = new MinMaxDistanceConstraint(p1, p2, 50, 150, 1);
+  sim.addConstraint(minMax);
+  ```
+  </TabItem>
+</Tabs>
+
+## MinMaxAngleConstraint
+
+Keeps the angle between three particles within a specific range in radians.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <MinMaxAngleConstraint from="p1" center="p2" to="p3" minAngle={Math.PI/2} maxAngle={Math.PI} />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const joint = new MinMaxAngleConstraint(p1, p2, p3, Math.PI/2, Math.PI, 1);
+  sim.addConstraint(joint);
+  ```
+  </TabItem>
+</Tabs>
+
+## PlaneConstraint
+
+Forces a particle to stay on one side of an infinite plane (a line in 2D).
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+  ```jsx
+  <PlaneConstraint particle="ball" origin={new Vec2(0, 300)} normal={new Vec2(0, -1)} />
+  ```
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+  ```javascript
+  const floor = new PlaneConstraint(ball, new Vec2(0, 300), new Vec2(0, -1));
+  sim.addConstraint(floor);
+  ```
+  </TabItem>
+</Tabs>
+

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Square Demo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #222;
+            color: #eee;
+            text-align: center;
+        }
+
+        canvas {
+            background: #fff;
+        }
+
+        nav {
+            margin: 10px;
+        }
+
+        nav a {
+            color: #0af;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a href="../../index.html">Home</a> |
+        <a href="lineSegment.html">Line Segment</a> |
+        <a href="tire.html">Tires</a> |
+        <a href="square.html">Square</a> |
+        <a href="spirale.html">Spirale</a> |
+        <a href="CollisionConstraint.html">Collision Constraint</a>
+    </nav>
+    <h1>Test: Square</h1>
+    <canvas id="scratch" style="width: 800px; height: 500px;"></canvas>
+
+    <script type="module">
+        import { VerletJS, Vec2, PinConstraint, lineSegments, DistanceConstraint, Composite, Particle } from '../../dist/verlet-engine.es.js';
+
+        window.onload = function () {
+            const canvas = document.getElementById("scratch");
+            const ctx = canvas.getContext("2d");
+            const width = parseInt(canvas.style.width);
+            const height = parseInt(canvas.style.height);
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const sim = new VerletJS(width, height, { gravity: new Vec2(0, 0.5), friction: 0.9, groundFriction: 0.7, solverIterations: 10, restitution: 0.5 });
+
+            const composite = new Composite();
+
+            const a = new Particle((new Vec2(100, 100)));
+            const b = new Particle((new Vec2(150, 100)));
+            const c = new Particle((new Vec2(150, 200)));
+            const d = new Particle((new Vec2(100, 200)));
+
+            composite.particles.push(a);
+            composite.particles.push(b);
+            composite.particles.push(c);
+            composite.particles.push(d);
+
+            const stiffness = 1;
+
+
+            composite.constraints.push(new DistanceConstraint(a, b, stiffness));
+            composite.constraints.push(new DistanceConstraint(b, c, stiffness));
+            composite.constraints.push(new DistanceConstraint(c, d, stiffness));
+            composite.constraints.push(new DistanceConstraint(d, a, stiffness));
+            composite.constraints.push(new DistanceConstraint(c, a, stiffness));
+            composite.constraints.push(new DistanceConstraint(b, d, stiffness));
+
+            composite.particles.forEach(p => {
+                p.style = { color: '#ffff00', radius: 5 }; // Yellow points
+            });
+
+            composite.constraints.forEach(c => {
+                if (c instanceof PinConstraint) {
+                    c.style = { color: 'rgba(255,0,255,0.2)', radius: 10 }; // Transparent magenta pins
+                } else {
+                    c.style = { color: '#ff00ff', lineWidth: 3 }; // Magenta rods
+                }
+            });
+
+            sim.composites.push(composite);
+
+            let draggedEntity = null;
+            const mouse = new Vec2(0, 0);
+            const selectionRadius = 20;
+            const highlightColor = "#4f545c";
+
+            function nearestEntity() {
+                let d2Nearest = Infinity;
+                let entity = null;
+                for (const c of sim.composites) {
+                    for (const p of c.particles) {
+                        const d2 = p.pos.dist2(mouse);
+                        if (d2 < d2Nearest && d2 < selectionRadius * selectionRadius) {
+                            entity = p;
+                            d2Nearest = d2;
+                        }
+                    }
+                }
+                for (const c of sim.composites) {
+                    for (const constraint of c.constraints) {
+                        if (constraint instanceof PinConstraint && constraint.a === entity) return constraint;
+                    }
+                }
+                return entity;
+            }
+
+            canvas.onmousedown = function (e) { draggedEntity = nearestEntity(); };
+            canvas.onmouseup = function (e) { draggedEntity = null; };
+            canvas.onmousemove = function (e) {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - rect.left;
+                mouse.y = e.clientY - rect.top;
+                if (draggedEntity) draggedEntity.pos.mutableSet(mouse);
+            };
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                for (const c of sim.composites) {
+                    for (const constraint of c.constraints) {
+                        if (typeof (constraint).draw === 'function') (constraint).draw(ctx);
+                    }
+                    for (const p of c.particles) {
+                        ctx.beginPath();
+                        ctx.arc(p.pos.x, p.pos.y, p.style?.radius || 2, 0, 2 * Math.PI);
+                        ctx.fillStyle = p.style?.color || "#2dad8f";
+                        ctx.fill();
+                    }
+                }
+                const nearest = draggedEntity || nearestEntity();
+                if (nearest) {
+                    ctx.beginPath();
+                    ctx.arc(nearest.pos.x, nearest.pos.y, 8, 0, 2 * Math.PI);
+                    ctx.strokeStyle = highlightColor;
+                    ctx.stroke();
+                }
+            }
+
+            let lastTimestamp = 0;
+            function loop(currentTimestamp) {
+                const deltaTime = (currentTimestamp - lastTimestamp) / 1000; // Convert to seconds
+                lastTimestamp = currentTimestamp;
+
+                sim.frame(deltaTime);
+                draw();
+                requestAnimationFrame(loop);
+            };
+
+
+            loop();
+        }
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,185 @@
+---
+sidebar_position: 4
+---
+
+# The Simulation
+
+The simulation world is the container for your physics environment. It manages all the particles and constraints, and is responsible for stepping the simulation forward in time.
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Creating a Simulation
+
+This is the first step to get anything running.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  In React, you create a simulation world using the `<VerletCanvas>` component. It requires `width` and `height` props to define its boundaries.
+
+  ```jsx
+  import React from 'react';
+  import { VerletCanvas } from 'verlet-react';
+
+  const App = () => {
+    return (
+      <VerletCanvas width={600} height={400}>
+        {/* Your particles and constraints will go here */}
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  In vanilla JavaScript, you create an instance of the `VerletJS` class, providing the `width` and `height` of the simulation world.
+
+  ```javascript
+  import { VerletJS } from 'verlet-engine';
+
+  // Create a simulation world of 600x400 pixels
+  const sim = new VerletJS(600, 400);
+  ```
+
+  </TabItem>
+</Tabs>
+
+## Configuring the Simulation
+
+You can customize the global physics properties of the simulation, like gravity and friction.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  You pass an `options` object to the `<VerletCanvas>` component. The simulation will automatically update if you change this object.
+
+  ```jsx
+  import { Vec2 } from 'verlet-engine';
+
+  const simOptions = {
+    gravity: new Vec2(0, 0.5),
+    friction: 0.98,
+    solverIterations: 15,
+  };
+
+  const App = () => {
+    return (
+      <VerletCanvas width={600} height={400} options={simOptions}>
+        {/* ... */}
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  You can pass an options object as the third argument to the `VerletJS` constructor.
+
+  ```javascript
+  import { VerletJS, Vec2 } from 'verlet-engine';
+
+  const options = {
+    gravity: new Vec2(0, 0.5), // A stronger gravity
+    friction: 0.98,           // A little more friction
+    solverIterations: 15,     // Higher precision for constraints
+  };
+
+  const sim = new VerletJS(600, 400, options);
+  ```
+
+  </TabItem>
+</Tabs>
+
+### Available Options
+
+- `gravity` (Vec2): A vector representing the global gravity. Default is `new Vec2(0, 0.2)`.
+- `friction` (number): The air friction applied to all particles. `1.0` means no friction. Default is `0.99`.
+- `groundFriction` (number): The friction applied when a particle is on the ground. Default is `0.8`.
+- `restitution` (number): The "bounciness" of particles when they hit the boundaries. `1.0` is a perfectly elastic collision. Default is `0.2`.
+- `solverIterations` (number): The number of times the constraint solver runs per frame. More iterations lead to more rigid and stable simulations but require more processing power. Default is `8`.
+
+## Updating the Simulation
+
+To create motion, the simulation must be advanced on each frame.
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  The `<VerletCanvas>` handles this **automatically**. It uses an internal `requestAnimationFrame` loop to update the simulation and re-render the canvas whenever a change occurs. You do not need to do anything.
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  You are responsible for running the simulation loop. The `sim.frame()` method advances the simulation by one step. It should be called inside a `requestAnimationFrame` loop.
+
+  ```javascript
+  function animate() {
+    // Update the simulation
+    sim.frame();
+
+    // Render the simulation (see the Rendering page)
+    // ...
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+  ```
+
+  </TabItem>
+</Tabs>
+
+## Adding Objects
+
+<Tabs groupId="lang">
+  <TabItem value="react" label="React">
+
+  You add objects declaratively by placing them as children of `<VerletCanvas>`. This is the standard React way of building a scene.
+
+  ```jsx
+  import { VerletCanvas, Point, Cloth } from 'verlet-react';
+  import { Vec2 } from 'verlet-engine';
+
+  const App = () => {
+    return (
+      <VerletCanvas width={600} height={400}>
+        {/* Add a single point */}
+        <Point id="p1" pos={new Vec2(100, 100)} />
+
+        {/* Add a complex composite */}
+        <Cloth 
+          origin={new Vec2(200, 100)}
+          width={150}
+          height={100}
+          segments={12}
+        />
+      </VerletCanvas>
+    );
+  };
+  ```
+
+  </TabItem>
+  <TabItem value="js" label="JavaScript">
+
+  You can add objects by creating a `Composite` and pushing it to the `composites` array, or by using helper functions that do this for you.
+
+  ```javascript
+  import { VerletJS, Vec2, Composite, Particle, lineSegments } from 'verlet-engine';
+
+  const sim = new VerletJS(600, 400);
+
+  // Method 1: Manually create a composite and add it
+  const manualComposite = new Composite();
+  manualComposite.particles.push(new Particle(new Vec2(100, 100)));
+  sim.composites.push(manualComposite);
+
+  // Method 2: Use a helper function (recommended for common shapes)
+  // The function adds the composite to the simulation automatically.
+  lineSegments(sim, [new Vec2(200, 100), new Vec2(300, 100)], 1);
+  ```
+
+  </TabItem>
+</Tabs>

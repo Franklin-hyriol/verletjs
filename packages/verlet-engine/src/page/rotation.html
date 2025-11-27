@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rotation Functions Demo</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; text-align: center; background-color: #f0f0f0; }
+    canvas { background-color: #fff; }
+  </style>
+</head>
+<body>
+  <h2>`rotateParticle` and `rotateComposite` Demo</h2>
+  <p>A single particle orbiting a center point, and a composite box rotating on itself.</p>
+  <canvas id="canvas"></canvas>
+  <script type="module">
+    import { VerletJS, Particle, DistanceConstraint, Composite, Vec2, rotateParticle, rotateComposite } from '../../dist/verlet-engine.es.js';
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 800;
+    canvas.height = 400;
+
+    const sim = new VerletJS(canvas.width, canvas.height);
+    sim.gravity = new Vec2(0, 0);
+
+    // --- Example 1: rotateParticle ---
+    const orbitCenter = new Vec2(200, 200);
+    const orbitingParticle = new Particle(new Vec2(200, 100));
+    const orbitComposite = new Composite();
+    orbitComposite.particles.push(orbitingParticle);
+    sim.composites.push(orbitComposite);
+
+    // --- Example 2: rotateComposite ---
+    const boxComposite = new Composite();
+    const boxTopLeft = new Particle(new Vec2(550, 150));
+    const boxTopRight = new Particle(new Vec2(650, 150));
+    const boxBottomRight = new Particle(new Vec2(650, 250));
+    const boxBottomLeft = new Particle(new Vec2(550, 250));
+    boxComposite.particles.push(boxTopLeft, boxTopRight, boxBottomRight, boxBottomLeft);
+
+    // Constraints to hold the box shape
+    boxComposite.constraints.push(new DistanceConstraint(boxTopLeft, boxTopRight, 1));
+    boxComposite.constraints.push(new DistanceConstraint(boxTopRight, boxBottomRight, 1));
+    boxComposite.constraints.push(new DistanceConstraint(boxBottomRight, boxBottomLeft, 1));
+    boxComposite.constraints.push(new DistanceConstraint(boxBottomLeft, boxTopLeft, 1));
+    // Cross braces for rigidity
+    boxComposite.constraints.push(new DistanceConstraint(boxTopLeft, boxBottomRight, 1));
+    boxComposite.constraints.push(new DistanceConstraint(boxTopRight, boxBottomLeft, 1));
+    sim.composites.push(boxComposite);
+
+    // --- Example 3: Rotate towards target on click ---
+    const arrowComposite = new Composite();
+    const arrowTip = new Particle(new Vec2(400, 300));
+    const arrowBaseLeft = new Particle(new Vec2(380, 330));
+    const arrowBaseRight = new Particle(new Vec2(420, 330));
+    // A center particle for rotation, which is not rendered
+    const arrowCenter = new Particle(new Vec2(400, 320));
+    arrowComposite.particles.push(arrowTip, arrowBaseLeft, arrowBaseRight, arrowCenter);
+    arrowComposite.constraints.push(new DistanceConstraint(arrowTip, arrowBaseLeft, 1));
+    arrowComposite.constraints.push(new DistanceConstraint(arrowTip, arrowBaseRight, 1));
+    arrowComposite.constraints.push(new DistanceConstraint(arrowBaseLeft, arrowBaseRight, 1));
+    // Rigidity constraints to the center
+    arrowComposite.constraints.push(new DistanceConstraint(arrowTip, arrowCenter, 1));
+    arrowComposite.constraints.push(new DistanceConstraint(arrowBaseLeft, arrowCenter, 1));
+    arrowComposite.constraints.push(new DistanceConstraint(arrowBaseRight, arrowCenter, 1));
+    sim.composites.push(arrowComposite);
+
+    let arrowTarget = new Vec2(400, 300); // Initial target
+
+    canvas.addEventListener('mousedown', (e) => {
+      arrowTarget.x = e.clientX - canvas.offsetLeft;
+      arrowTarget.y = e.clientY - canvas.offsetTop;
+    });
+
+
+    // --- Animation Loop ---
+    function animate() {
+      // 1. Apply Rotations
+      // Demo 1
+      rotateParticle(orbitingParticle, orbitCenter, 0.02);
+
+      // Demo 2
+      const boxCenter = new Vec2((boxTopLeft.pos.x + boxBottomRight.pos.x) / 2, (boxTopLeft.pos.y + boxBottomRight.pos.y) / 2);
+      rotateComposite(boxComposite, boxCenter, -0.01);
+
+      // Demo 3
+      const arrowBodyAxis = arrowTip.pos.sub(arrowCenter.pos);
+      const targetDirection = arrowTarget.sub(arrowCenter.pos);
+      const currentAngle = Math.atan2(arrowBodyAxis.y, arrowBodyAxis.x);
+      const targetAngle = Math.atan2(targetDirection.y, targetDirection.x);
+      let angleDifference = targetAngle - currentAngle;
+      while (angleDifference > Math.PI) angleDifference -= 2 * Math.PI;
+      while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
+
+      if (Math.abs(angleDifference) > 0.05) {
+        const maxRotationSpeed = 0.05;
+        const rotationThisFrame = Math.max(-maxRotationSpeed, Math.min(maxRotationSpeed, angleDifference));
+        rotateComposite(arrowComposite, arrowCenter.pos, rotationThisFrame);
+      }
+
+      // 2. Update Physics
+      sim.frame(16);
+
+      // 3. Draw Everything
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Demo 1
+      ctx.fillStyle = '#ff6347';
+      ctx.beginPath();
+      ctx.arc(orbitCenter.x, orbitCenter.y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillText("Center", orbitCenter.x - 20, orbitCenter.y + 20);
+      
+      ctx.fillStyle = '#4682b4';
+      ctx.beginPath();
+      ctx.arc(orbitingParticle.pos.x, orbitingParticle.pos.y, 8, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillText("rotateParticle", orbitingParticle.pos.x - 40, orbitingParticle.pos.y - 20);
+
+      // Draw Demo 2
+      for (const c of boxComposite.constraints) {
+        c.style = { color: '#888' };
+        c.draw(ctx);
+      }
+      for (const p of boxComposite.particles) {
+        ctx.fillStyle = '#32cd32';
+        ctx.beginPath();
+        ctx.arc(p.pos.x, p.pos.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      ctx.fillStyle = 'black';
+      ctx.fillText("rotateComposite", boxCenter.x - 50, boxCenter.y - 70);
+
+      // Draw Demo 3
+      ctx.strokeStyle = '#6a0dad';
+      ctx.lineWidth = 2;
+      for (const c of arrowComposite.constraints) {
+        if (c.a !== arrowCenter && c.b !== arrowCenter) c.draw(ctx);
+      }
+      ctx.fillStyle = '#6a0dad';
+      for (const p of arrowComposite.particles) {
+        if (p !== arrowCenter) {
+          ctx.beginPath();
+          ctx.arc(p.pos.x, p.pos.y, 5, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      }
+      ctx.fillStyle = 'black';
+      ctx.fillText("Click to set target", arrowCenter.pos.x - 50, arrowCenter.pos.y - 40);
+
+      // Draw arrow target
+      ctx.strokeStyle = 'rgba(106, 13, 173, 0.5)';
+      ctx.beginPath();
+      ctx.arc(arrowTarget.x, arrowTarget.y, 8, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

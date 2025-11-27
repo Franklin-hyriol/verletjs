@@ -1,6 +1,6 @@
 {
   "name": "verlet-engine",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A 2D Verlet physics engine written in TypeScript.",
   "keywords": ["verlet", "physics", "2d", "engine", "typescript"],
   "homepage": "https://github.com/Franklin-hyriol/verletjs#readme",

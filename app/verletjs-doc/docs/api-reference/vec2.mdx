@@ -1,0 +1,97 @@
+---
+sidebar_position: 2
+---
+
+# Vec2
+
+The `Vec2` class provides a robust implementation for 2D vectors, which are used throughout the library to represent positions, velocities, and forces.
+
+## Constructor
+
+### `new Vec2([x], [y])`
+
+Creates a new `Vec2` instance.
+
+#### Parameters
+
+- `x` (number, optional): The x-component of the vector. Defaults to `0`.
+- `y` (number, optional): The y-component of the vector. Defaults to `0`.
+
+#### Example
+
+```javascript
+import { Vec2 } from 'verlet-engine';
+
+const position = new Vec2(100, 200);
+const origin = new Vec2(); // (0, 0)
+```
+
+---
+
+## Immutable vs. Mutable Methods
+
+The `Vec2` class offers two types of methods for vector operations:
+
+- **Immutable methods** (e.g., `add`, `sub`, `scale`) do not change the original vector. Instead, they return a **new** `Vec2` instance with the result of the operation. This is useful for preventing unintended side effects.
+
+- **Mutable methods** (e.g., `mutableAdd`, `mutableSub`, `mutableScale`) modify the vector **in-place**. These are more memory-efficient as they don't create new objects, making them ideal for performance-critical code inside the simulation loop.
+
+---
+
+## Common Immutable Methods
+
+### `add(v)`
+
+Returns a new vector `this + v`.
+
+### `sub(v)`
+
+Returns a new vector `this - v`.
+
+### `scale(coef)`
+
+Returns a new vector with each component multiplied by `coef`.
+
+### `normal()`
+
+Returns a new vector with the same direction but a length of 1.
+
+---
+
+## Common Mutable Methods
+
+### `mutableSet(v)`
+
+Sets the components of the vector to match vector `v`.
+
+### `mutableAdd(v)`
+
+Adds vector `v` to the current vector.
+
+### `mutableSub(v)`
+
+Subtracts vector `v` from the current vector.
+
+### `mutableScale(coef)`
+
+Multiplies the components of the current vector by `coef`.
+
+---
+
+## Other Useful Methods
+
+### `length()`
+
+Returns the magnitude (length) of the vector.
+
+### `length2()`
+
+Returns the squared magnitude of the vector. This is faster to compute than `length()` and is useful for comparisons.
+
+### `dist(v)`
+
+Returns the distance between this vector and vector `v`.
+
+### `dot(v)`
+
+Returns the dot product between this vector and vector `v`.
