@@ -22,8 +22,8 @@
     "prism-react-renderer": "^2.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "verlet-engine": "^1.0.0",
-    "verlet-react": "^1.0.0"
+    "verlet-engine": "2.0.0",
+    "verlet-react": "2.0.0"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.9.1",

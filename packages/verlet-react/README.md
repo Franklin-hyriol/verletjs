@@ -2,6 +2,8 @@
 
 A React wrapper library for `verlet-engine`, providing declarative components to easily integrate 2D Verlet physics simulations into your React applications.
 
+**[Live Documentation](https://verlet.pages.dev/)**
+
 ## Installation
 
 ```bash

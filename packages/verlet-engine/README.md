@@ -2,6 +2,8 @@
 
 A JavaScript/TypeScript library for 2D Verlet physics simulations.
 
+**[Live Documentation](https://verlet.pages.dev/)**
+
 This project is a fork of the original [Verlet.js by Sub Protocol](https://subprotocol.com/system/verlet-hello-world.html). It has been updated to be type-safe with TypeScript and includes modern script practices.
 
 ## Installation
